@@ -47,7 +47,7 @@ What model(s) did you use and why?
 cart_orig = 14000.0
 ice_orig = 500.0
 milk_orig = 1500.0
-tea_orig = 1500.0
+tea_orig = 2000.0
 equip_orig = 4000.0
 top_orig = 3500.0
 bribe_orig = 12000.0/12
@@ -63,7 +63,7 @@ bil_snack_amt = 1
 #+END_SRC
 
 #+RESULTS:
-: # Out[91]:
+: # Out[136]:
 
 Given that there's half as many potential customers on the market we can divide the demand from both the snacks and bubble tea in half
 
@@ -73,7 +73,7 @@ bil_snack_amt /= 2
 #+END_SRC
 
 #+RESULTS:
-: # Out[92]:
+: # Out[137]:
 
 Because the market cap for bubble tea is smaller in this new area, there may be less competition since the market is less lucrative.
 Let's assume in this new area you can capture an extra 15% of whatever percentage of the market you had previously.
@@ -84,7 +84,7 @@ bbl_tea_amt *= 1.15
 #+END_SRC
 
 #+RESULTS:
-: # Out[93]:
+: # Out[138]:
 
 From this we can ballpark some other costs and our revenues:
 #+BEGIN_SRC ipython :session 
@@ -102,7 +102,7 @@ bil_snack_rev = bil_snack_rev_orig * bil_snack_amt
 #+END_SRC
 
 #+RESULTS:
-: # Out[94]:
+: # Out[139]:
 
 Since the neighborhood has less cops patrolling, let's say you only need to bribe the police 80% as often
 #+BEGIN_SRC ipython :session
@@ -110,7 +110,7 @@ bribe = bribe_orig * 0.8
 #+END_SRC
 
 #+RESULTS:
-: # Out[95]:
+: # Out[140]:
 
 Unless you somehow invent teleportation in the process of starting your new business, you will have to find someone to run this second location.
 You don't want to risk having an underpaid and disgruntled worker potentially destroying your investment, so you offer to pay $18/hour as a starting wage.
@@ -121,7 +121,7 @@ empl = 4.5 * hrs * pay # pay per month
 #+END_SRC
 
 #+RESULTS:
-: # Out[96]:
+: # Out[141]:
 
 Now we have all our revenues:
 #+BEGIN_SRC ipython :session :results output raw drawer :exports results
@@ -163,14 +163,14 @@ print(tabulate(DataFrame([names, value_text]).T.values, tablefmt='orgtbl'))
 #+RESULTS:
 :RESULTS:
 #+ATTR_LATEX: :align l | r
-| Cart              | $10000.00 |
-| Mafia Startup     | $22000.00 |
-| Mafia Recurring   | $2000.00  |
-| Ice               | $287.50   |
-| Milk              | $862.50   |
-| Tea               | $862.50   |
-| Various Equipment | $3000.00  |
-| Toppings          | $2012.50  |
-| Bribes            | $800.00   |
-| Employee          | $3240.00  |
+| Cart                      | $10000.00 |
+| Mafia Startup             | $22000.00 |
+| Mafia Recurring (monthly) | $2000.00  |
+| Ice (monthly)             | $287.50   |
+| Milk (monthly)            | $862.50   |
+| Tea (monthly)             | $1150.00  |
+| Various Equipment         | $3000.00  |
+| Toppings (monthly)        | $2012.50  |
+| Bribes (monthly)          | $800.00   |
+| Employee (monthly)        | $3240.00  |
 :END:
