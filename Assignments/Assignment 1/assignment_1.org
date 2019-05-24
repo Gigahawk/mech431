@@ -1,0 +1,176 @@
+#+TITLE: MECH 431 2019S - Assignment 1
+#+SUBTITLE: BLACK TEA
+#+OPTIONS: toc:nil
+
+* 
+What are your fixed costs, and what are your variable costs?
+What are your recurring costs, and what are one time?
+** Fixed and varaible costs
+Most of the costs are variable, with the only real fixed cost being the payments to the Bubble Tea Mafia.
+All other costs are variable, at least at the time of purchase:
+- You could choose to spend more or less money on a cart
+  - This would affect things like carrying capacity (for ingredients, etc) and insulation efficiency, which would have affects on things like the maximum amount of bubble tea you could sell in a day, or money spent on buying ice
+- The amount of ice you need on a given day depends on factors like how hot it is, how much product you have to keep cool, etc.
+- Milk, tea, and toppings costs are determined by how much bubble tea you think you can sell, and the particular suppliers you choose to order from.
+  - The cost of toppings can be particularly variable if you notice that certain kinds of toppings sell better or worse.
+  - Different suppliers may provide products of different percieved quality, however even replacing an ingredient for one of higher percieved quality may lead to backlash from customers who prefer the old recipe
+- Paying for better equipment could mean faster production, or less weight (you still have to move the cart home at the end of the day)
+- The amount paid in bribes depends on the amount of risk you're willing to take, as societal factors (i.e. there may be a sudden crackdown on illegal bubble tea businesses and now you have a lot more police on your back)
+** Recurring costs
+All equipment is a one time costs (assuming you never need to replace or upgrade it), as well as the startup licensing fee.
+All other costs are recurring.
+
+*** Observations
+Unless they've been included under various equipment or toppings, it appears that there is no recurring cost for utensils (cups, straws, napkins, etc.) listed.
+Perhaps this is an aggressively eco-friendly business.
+* 
+You are thinking of opening a second stand in a nearby neighborhood.
+It's controlled by the same mafia group, but the area only has half the population as your current stand.
+Estimate your costs and revenues for this location.
+What model(s) did you use and why?
+** Assumptions
+- The only difference between the two populations is size 
+  - It's hard to know if the income in this area is different without further information. An area could be less populated because it has more expensive and sparse housing, or because it is more rural
+  - Presumably the number of bubble tea drinkers/brother-in-law snack eaters is also  proportionally the same between both populations.
+- A smaller neighborhood means a quieter neighborhood
+  - Police patrol this area less frequently
+- The revenue history of your existing business is fairly consistent and can be taken as representative of future history
+- Your brother-in-law does not sell his snacks on the side.
+  - He's no businessman, he just likes baking.
+- The price of commodities don't change very much at the amounts we're purchasing
+  - Accounting for this makes the model a lot more complicated and would require a lot more research
+- The mafia charges per operation and the price does not change regardless of location
+  - They're making enough money to not worry about the fine details of optimizing costs to get more licensing fees
+** Model
+#+BEGIN_SRC ipython :session 
+# Costs/revenues of the original business (recurrent values calculated monthly)
+cart_orig = 14000.0
+ice_orig = 500.0
+milk_orig = 1500.0
+tea_orig = 1500.0
+equip_orig = 4000.0
+top_orig = 3500.0
+bribe_orig = 12000.0/12
+mafia_one_time = 22000.0
+mafia_recurr = 2000.0
+
+bbl_tea_rev_orig = 14000.0
+bil_snack_rev_orig = 3500.0
+
+# Percentage of product demand relative to original location
+bbl_tea_amt = 1
+bil_snack_amt = 1
+#+END_SRC
+
+#+RESULTS:
+: # Out[91]:
+
+Given that there's half as many potential customers on the market we can divide the demand from both the snacks and bubble tea in half
+
+#+BEGIN_SRC ipython :session 
+bbl_tea_amt /= 2
+bil_snack_amt /= 2
+#+END_SRC
+
+#+RESULTS:
+: # Out[92]:
+
+Because the market cap for bubble tea is smaller in this new area, there may be less competition since the market is less lucrative.
+Let's assume in this new area you can capture an extra 15% of whatever percentage of the market you had previously.
+Note that this does not apply to your brother-in-law's snacks, since if they are truly special you would own the entire market.
+
+#+BEGIN_SRC ipython :session 
+bbl_tea_amt *= 1.15
+#+END_SRC
+
+#+RESULTS:
+: # Out[93]:
+
+From this we can ballpark some other costs and our revenues:
+#+BEGIN_SRC ipython :session 
+# Less demand, smaller cart, lower capacity equipment
+cart = 10000.0
+equip = 3000.0
+# Scale down ingredient costs for lower demand
+ice = ice_orig * bbl_tea_amt
+milk = milk_orig * bbl_tea_amt
+tea = tea_orig * bbl_tea_amt
+top = top_orig * bbl_tea_amt
+
+bbl_tea_rev = bbl_tea_rev_orig * bbl_tea_amt
+bil_snack_rev = bil_snack_rev_orig * bil_snack_amt
+#+END_SRC
+
+#+RESULTS:
+: # Out[94]:
+
+Since the neighborhood has less cops patrolling, let's say you only need to bribe the police 80% as often
+#+BEGIN_SRC ipython :session
+bribe = bribe_orig * 0.8
+#+END_SRC
+
+#+RESULTS:
+: # Out[95]:
+
+Unless you somehow invent teleportation in the process of starting your new business, you will have to find someone to run this second location.
+You don't want to risk having an underpaid and disgruntled worker potentially destroying your investment, so you offer to pay $18/hour as a starting wage.
+#+BEGIN_SRC ipython :session
+hrs = 40.0 # per week
+pay = 18.0 # per hour
+empl = 4.5 * hrs * pay # pay per month
+#+END_SRC
+
+#+RESULTS:
+: # Out[96]:
+
+Now we have all our revenues:
+#+BEGIN_SRC ipython :session :results output raw drawer :exports results
+from tabulate import tabulate
+from pandas import DataFrame
+
+names = """Cart
+Mafia Startup
+Mafia Recurring (monthly)
+Ice (monthly)
+Milk (monthly)
+Tea (monthly)
+Various Equipment
+Toppings (monthly)
+Bribes (monthly)
+Employee (monthly)""".split("\n")
+
+value_text = f"""{cart:.2f}
+{mafia_one_time:.2f}
+{mafia_recurr:.2f}
+{ice:.2f}
+{milk:.2f}
+{tea:.2f}
+{equip:.2f}
+{top:.2f}
+{bribe:.2f}
+{empl:.2f}""".split("\n")
+
+total = sum([float(f) for f in value_text])
+
+#value_text.extend(["", str(total)])
+value_text = [f"${t}" if t else "---" for t in value_text]
+
+print('#+ATTR_LATEX: :align l | r')
+print(tabulate(DataFrame([names, value_text]).T.values, tablefmt='orgtbl'))
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+#+ATTR_LATEX: :align l | r
+| Cart              | $10000.00 |
+| Mafia Startup     | $22000.00 |
+| Mafia Recurring   | $2000.00  |
+| Ice               | $287.50   |
+| Milk              | $862.50   |
+| Tea               | $862.50   |
+| Various Equipment | $3000.00  |
+| Toppings          | $2012.50  |
+| Bribes            | $800.00   |
+| Employee          | $3240.00  |
+:END:
