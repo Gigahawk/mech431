@@ -63,7 +63,7 @@ bil_snack_amt = 1
 #+END_SRC
 
 #+RESULTS:
-: # Out[136]:
+: # Out[1]:
 
 Given that there's half as many potential customers on the market we can divide the demand from both the snacks and bubble tea in half
 
@@ -73,7 +73,7 @@ bil_snack_amt /= 2
 #+END_SRC
 
 #+RESULTS:
-: # Out[137]:
+: # Out[2]:
 
 Because the market cap for bubble tea is smaller in this new area, there may be less competition since the market is less lucrative.
 Let's assume in this new area you can capture an extra 15% of whatever percentage of the market you had previously.
@@ -84,7 +84,7 @@ bbl_tea_amt *= 1.15
 #+END_SRC
 
 #+RESULTS:
-: # Out[138]:
+: # Out[3]:
 
 From this we can ballpark some other costs and our revenues:
 #+BEGIN_SRC ipython :session 
@@ -102,7 +102,7 @@ bil_snack_rev = bil_snack_rev_orig * bil_snack_amt
 #+END_SRC
 
 #+RESULTS:
-: # Out[139]:
+: # Out[4]:
 
 Since the neighborhood has less cops patrolling, let's say you only need to bribe the police 80% as often
 #+BEGIN_SRC ipython :session
@@ -110,7 +110,7 @@ bribe = bribe_orig * 0.8
 #+END_SRC
 
 #+RESULTS:
-: # Out[140]:
+: # Out[5]:
 
 Unless you somehow invent teleportation in the process of starting your new business, you will have to find someone to run this second location.
 You don't want to risk having an underpaid and disgruntled worker potentially destroying your investment, so you offer to pay $18/hour as a starting wage.
@@ -121,9 +121,9 @@ empl = 4.5 * hrs * pay # pay per month
 #+END_SRC
 
 #+RESULTS:
-: # Out[141]:
+: # Out[6]:
 
-Now we have all our revenues:
+Now we have all our costs:
 #+BEGIN_SRC ipython :session :results output raw drawer :exports results
 from tabulate import tabulate
 from pandas import DataFrame
@@ -150,13 +150,23 @@ value_text = f"""{cart:.2f}
 {bribe:.2f}
 {empl:.2f}""".split("\n")
 
-total = sum([float(f) for f in value_text])
+total_cost_month = sum(
+    [float(value_text[i]) if "monthly" in name else 0 for i, name in enumerate(names)])
+total_cost_single = sum(
+    [float(value_text[i]) if "monthly" not in name else 0 for i, name in enumerate(names)])
 
 #value_text.extend(["", str(total)])
 value_text = [f"${t}" if t else "---" for t in value_text]
 
+total_text = [f"${v:.2f}" for v in (total_cost_month, total_cost_single)]
+
 print('#+ATTR_LATEX: :align l | r')
 print(tabulate(DataFrame([names, value_text]).T.values, tablefmt='orgtbl'))
+print()
+print('#+ATTR_LATEX: :align l | r')
+print(tabulate(DataFrame([["Total Monthly Costs",
+                           "Total Single Costs"],
+                           total_text]).T.values, tablefmt='orgtbl'))
 
 #+END_SRC
 
@@ -173,4 +183,51 @@ print(tabulate(DataFrame([names, value_text]).T.values, tablefmt='orgtbl'))
 | Toppings (monthly)        | $2012.50  |
 | Bribes (monthly)          | $800.00   |
 | Employee (monthly)        | $3240.00  |
+
+#+ATTR_LATEX: :align l | r
+| Total Monthly Costs | $10352.50 |
+| Total Single Costs  | $35000.00 |
 :END:
+
+
+As well as our revenues
+#+BEGIN_SRC ipython :session :results output raw drawer :exports results
+
+names = """Bubble Tea (monthly)
+Brother-in-law's Snacks (monthly)""".split("\n")
+
+value_text = f"""{bbl_tea_rev:.2f}
+{bil_snack_rev:.2f}""".split("\n")
+
+total_rev_month = sum([float(f) for f in value_text])
+
+#value_text.extend(["", str(total)])
+value_text = [f"${t}" if t else "---" for t in value_text]
+
+print('#+ATTR_LATEX: :align l | r')
+print(tabulate(DataFrame([names, value_text]).T.values, tablefmt='orgtbl'))
+print()
+print('#+ATTR_LATEX: :align l | r')
+print(tabulate(DataFrame(["Total Monthly Revenue", f"${total_rev_month:.2f}"]).T.values, tablefmt='orgtbl'))
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+#+ATTR_LATEX: :align l | r
+| Bubble Tea (monthly)              | $8050.00 |
+| Brother-in-law's Snacks (monthly) | $1750.00 |
+
+#+ATTR_LATEX: :align l | r
+| Total Monthly Revenue | $9800.00 |
+:END:
+* 
+What is the payback period for opening the second stand?
+Show this on a chart
+What is the benefit/cost ratio for starting the second stand and running it for one year?
+
+#+BEGIN_SRC ipython :session
+day = 0
+
+
+#+END_SRC
