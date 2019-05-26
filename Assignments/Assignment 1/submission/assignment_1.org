@@ -54,13 +54,16 @@ bribe_orig = 12000.0/12
 bbl_tea_rev_orig = 14000.0
 bil_snack_rev_orig = 3500.0/2
 
+total_rev_month_orig = bbl_tea_rev_orig + bil_snack_rev_orig
+total_cost_month_orig = sum([ice_orig, milk_orig, tea_orig, top_orig, bribe_orig])
+
 # Percentage of product demand relative to original location
 bbl_tea_amt = 1
 bil_snack_amt = 1
 #+END_SRC
 
 #+RESULTS:
-: # Out[1]:
+: # Out[148]:
 
 Given that there's half as many potential customers on the market we can divide the demand from both the snacks and bubble tea in half
 
@@ -70,7 +73,7 @@ bil_snack_amt /= 2
 #+END_SRC
 
 #+RESULTS:
-: # Out[2]:
+: # Out[149]:
 
 Because the market cap for bubble tea is smaller in this new area, there may be less competition since the market is less lucrative.
 Let's assume in this new area you can capture an extra 15% of whatever percentage of the market you had previously.
@@ -81,7 +84,7 @@ bbl_tea_amt *= 1.15
 #+END_SRC
 
 #+RESULTS:
-: # Out[3]:
+: # Out[150]:
 
 From this we can ballpark some other costs and our revenues:
 #+BEGIN_SRC ipython :session 
@@ -99,7 +102,7 @@ bil_snack_rev = bil_snack_rev_orig * bil_snack_amt
 #+END_SRC
 
 #+RESULTS:
-: # Out[4]:
+: # Out[151]:
 
 Since the neighborhood has less cops patrolling, let's say you only need to bribe the police 80% as often
 #+BEGIN_SRC ipython :session
@@ -107,7 +110,7 @@ bribe = bribe_orig * 0.8
 #+END_SRC
 
 #+RESULTS:
-: # Out[5]:
+: # Out[152]:
 
 Unless you somehow invent teleportation in the process of starting your new business, you will have to find someone to run this second location.
 You don't want to risk having an underpaid and disgruntled worker potentially destroying your investment, so you offer to pay $18/hour from 11am to 3pm[fn:hours] as a starting wage.
@@ -119,7 +122,7 @@ empl = 4.5 * hrs * pay # pay per month
 #+END_SRC
 
 #+RESULTS:
-: # Out[29]:
+: # Out[153]:
 
 [fn:hours] This seems to be a relatively common set of hours for food trucks to be working
 
@@ -234,7 +237,7 @@ import numpy as np
 #+END_SRC
 
 #+RESULTS:
-: # Out[88]:
+: # Out[156]:
 
 #+BEGIN_SRC ipython :session :results raw drawer :exports results
 
@@ -278,27 +281,84 @@ f"Costs recouped by {month_recouped}th month (0-indexed)"
 
 #+RESULTS:
 :RESULTS:
-# Out[143]:
+# Out[157]:
 : 'Costs recouped by 5th month (0-indexed)'
-[[file:./obipy-resources/315a8J.svg]]
+[[file:./obipy-resources/BmyJzP.svg]]
 :END:
 
 By the end of the year, the benefit/cost ratio will be:
 #+BEGIN_SRC ipython :session :results raw drawer :exports both
-f"{abs(profit/costs):.3f}"
+f"{abs(rev/costs):.3f}"
 
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[144]:
-: '0.142'
+# Out[158]:
+: '1.142'
 :END:
 
 * 
 Create a cashflow diagram for the combined two-stand operation (i.e. the total costs and revenues for both stands for two years)
-#+BEGIN_SRC ipython :session
+#+BEGIN_SRC ipython :session :results raw drawer :exports results
+cost = 0
+cost2 = -total_cost_single
+rev = 0
+rev2 = 0
+
+cost_list = []
+cost2_list = []
+rev_list = []
+rev2_list = []
+
+months = range(24)
+
+for month in months:
+    cost -= total_cost_month_orig
+    cost2 -= total_cost_month
+    rev += total_rev_month_orig
+    rev2 += total_rev_month
+    cost_list.append(cost)
+    cost2_list.append(cost2)
+    rev_list.append(rev)
+    rev2_list.append(rev2)
+    cost = 0
+    cost2 = 0
+    rev = 0
+    rev2 = 0
+
+width = 0.35
+plt.bar(months,  cost_list, width, label="First stand cost")
+plt.bar(months, cost2_list, width, bottom=cost_list, label="Second stand cost")
+plt.bar(months, rev_list, width, label="First stand revenue")
+plt.bar(months, rev2_list, width, bottom=rev_list, label="Second stand revenue")
 
 
+plt.axhline(linewidth='1', color='k')
 
+plt.xlabel("Time (months)")
+plt.ylabel("Money ($)")
+plt.legend(bbox_to_anchor=(1.5,1))
+
+None
 #+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[187]:
+[[file:./obipy-resources/NdhG5y.svg]]
+:END:
+* 
+Instead of opening a second stand, you consider the possibility of legalizing your existing operation.
+This would involve taking a four-year degree in bubble tea business management, four more years as an apprentice bubble tea vendor, leasing a proper facility, and getting appropriate permits.
+You only have resources to do one or the other.
+Discuss some of the trade-offs between the two options.
+** Discussion
+By operating a legal business, you no longer have to pay bribes to the police.
+However, the mafia operates outside of the law and you would still have to pay them.
+The payment to the police only represents a third of the "protection" costs, and even a smaller amount of the total monthly costs.
+Spending 8 years and tens thousands of dollars to legitimize the business just to reduce this relatively small cost is probably not worth the investment.
+
+On the other hand, it is possible that the police will demand more money in the future, or stop taking bribes at all, in which case having invested in a legitimate business will allow you to fill the power vaccum left behind by all of the closing stands.
+
+
