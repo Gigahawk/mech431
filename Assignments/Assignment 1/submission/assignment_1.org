@@ -39,8 +39,7 @@ What model(s) did you use and why?
   - He's no businessman, he just likes baking.
 - The price of commodities don't change very much at the amounts we're purchasing
   - Accounting for this makes the model a lot more complicated and would require a lot more research
-- The mafia charges per operation and the price does not change regardless of location
-  - They're making enough money to not worry about the fine details of optimizing costs to get more licensing fees
+- The mafia payments are for *permission* to operate in the turf regardless of the number of operations, meaning that no further payments have to be made for a second stand.
 ** Model
 #+BEGIN_SRC ipython :session 
 # Costs/revenues of the original business (recurrent values calculated monthly)
@@ -51,11 +50,9 @@ tea_orig = 2000.0
 equip_orig = 4000.0
 top_orig = 3500.0
 bribe_orig = 12000.0/12
-mafia_one_time = 22000.0
-mafia_recurr = 2000.0
 
 bbl_tea_rev_orig = 14000.0
-bil_snack_rev_orig = 3500.0
+bil_snack_rev_orig = 3500.0/2
 
 # Percentage of product demand relative to original location
 bbl_tea_amt = 1
@@ -113,15 +110,22 @@ bribe = bribe_orig * 0.8
 : # Out[5]:
 
 Unless you somehow invent teleportation in the process of starting your new business, you will have to find someone to run this second location.
-You don't want to risk having an underpaid and disgruntled worker potentially destroying your investment, so you offer to pay $18/hour as a starting wage.
+You don't want to risk having an underpaid and disgruntled worker potentially destroying your investment, so you offer to pay $18/hour from 11am to 3pm[fn:hours] as a starting wage.
 #+BEGIN_SRC ipython :session
-hrs = 40.0 # per week
+hrs = 4 * 5 # per week
 pay = 18.0 # per hour
 empl = 4.5 * hrs * pay # pay per month
+
 #+END_SRC
 
 #+RESULTS:
-: # Out[6]:
+: # Out[29]:
+
+[fn:hours] This seems to be a relatively common set of hours for food trucks to be working
+
+
+
+
 
 Now we have all our costs:
 #+BEGIN_SRC ipython :session :results output raw drawer :exports results
@@ -129,8 +133,6 @@ from tabulate import tabulate
 from pandas import DataFrame
 
 names = """Cart
-Mafia Startup
-Mafia Recurring (monthly)
 Ice (monthly)
 Milk (monthly)
 Tea (monthly)
@@ -140,8 +142,6 @@ Bribes (monthly)
 Employee (monthly)""".split("\n")
 
 value_text = f"""{cart:.2f}
-{mafia_one_time:.2f}
-{mafia_recurr:.2f}
 {ice:.2f}
 {milk:.2f}
 {tea:.2f}
@@ -173,20 +173,18 @@ print(tabulate(DataFrame([["Total Monthly Costs",
 #+RESULTS:
 :RESULTS:
 #+ATTR_LATEX: :align l | r
-| Cart                      | $10000.00 |
-| Mafia Startup             | $22000.00 |
-| Mafia Recurring (monthly) | $2000.00  |
-| Ice (monthly)             | $287.50   |
-| Milk (monthly)            | $862.50   |
-| Tea (monthly)             | $1150.00  |
-| Various Equipment         | $3000.00  |
-| Toppings (monthly)        | $2012.50  |
-| Bribes (monthly)          | $800.00   |
-| Employee (monthly)        | $3240.00  |
+| Cart               | $10000.00 |
+| Ice (monthly)      | $287.50   |
+| Milk (monthly)     | $862.50   |
+| Tea (monthly)      | $1150.00  |
+| Various Equipment  | $3000.00  |
+| Toppings (monthly) | $2012.50  |
+| Bribes (monthly)   | $800.00   |
+| Employee (monthly) | $1620.00  |
 
 #+ATTR_LATEX: :align l | r
-| Total Monthly Costs | $10352.50 |
-| Total Single Costs  | $35000.00 |
+| Total Monthly Costs | $6732.50  |
+| Total Single Costs  | $13000.00 |
 :END:
 
 
@@ -216,18 +214,91 @@ print(tabulate(DataFrame(["Total Monthly Revenue", f"${total_rev_month:.2f}"]).T
 :RESULTS:
 #+ATTR_LATEX: :align l | r
 | Bubble Tea (monthly)              | $8050.00 |
-| Brother-in-law's Snacks (monthly) | $1750.00 |
+| Brother-in-law's Snacks (monthly) | $875.00  |
 
 #+ATTR_LATEX: :align l | r
-| Total Monthly Revenue | $9800.00 |
+| Total Monthly Revenue | $8925.00 |
 :END:
+
 * 
 What is the payback period for opening the second stand?
 Show this on a chart
 What is the benefit/cost ratio for starting the second stand and running it for one year?
+#+BEGIN_SRC ipython :session :exports none 
+%matplotlib inline
+%config InlineBackend.figure_format = 'svg'
+from matplotlib import pyplot as plt
+import matplotlib
+import numpy as np
 
+#+END_SRC
+
+#+RESULTS:
+: # Out[88]:
+
+#+BEGIN_SRC ipython :session :results raw drawer :exports results
+
+# Starting costs/revenues
+costs = -total_cost_single
+rev = 0
+
+month_recouped = None
+months = range(12)
+costs_list = []
+rev_list = []
+
+for month in months:
+    costs -= total_cost_month
+    rev += total_rev_month
+    costs_list.append(costs)
+    rev_list.append(rev)
+
+    if costs + rev > 0 and not month_recouped:
+        month_recouped = month
+
+costs_list = np.array(costs_list)
+rev_list = np.array(rev_list)
+    
+plt.plot(months, costs_list, 'ro', label='Costs')
+plt.plot(months, rev_list, 'go', label='Revenue')
+plt.plot(months, costs_list+rev_list, 'bo', label='Profit')
+
+plt.axhline(linewidth='1', color='k')
+plt.ylabel('Money ($)')
+plt.xlabel('Time (months)')
+plt.legend()
+
+profit = costs+rev
+
+f"Costs recouped by {month_recouped}th month (0-indexed)"
+
+
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[143]:
+: 'Costs recouped by 5th month (0-indexed)'
+[[file:./obipy-resources/315a8J.svg]]
+:END:
+
+By the end of the year, the benefit/cost ratio will be:
+#+BEGIN_SRC ipython :session :results raw drawer :exports both
+f"{abs(profit/costs):.3f}"
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[144]:
+: '0.142'
+:END:
+
+* 
+Create a cashflow diagram for the combined two-stand operation (i.e. the total costs and revenues for both stands for two years)
 #+BEGIN_SRC ipython :session
-day = 0
+
 
 
 #+END_SRC
