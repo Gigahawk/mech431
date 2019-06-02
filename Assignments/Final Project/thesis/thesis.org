@@ -1,0 +1,32 @@
+#+TITLE: MECH 431 Major Report Thesis/ Problem Statement
+#+SUBTITLE: Economic Viability of Open Source Software
+#+AUTHOR: Jasper Chan - 37467164
+#+OPTIONS: toc:nil
+
+
+The modern world is driven by software.
+Open source software to be specific.
+Many of the technologies that power the internet are at their core completely free for anyone to use.
+While some of the development is driven by volunteers, many large projects are receive contributions from large companies who pay employees to work on them.
+While initially it may seem that this is a waste of resources, it can be beneficial to a company to be able to fix issues specific to their own use cases instead of waiting for someone in the community to provide a fix.
+Because development happens in the public, it is also a good way for companies to find and verify talent of potential hires.
+This is especially true when companies open source their own tools, since outside developers who become proficient in them automatically gain skills they can directly apply to the company.
+Of course, usually only certain types of software is worth open sourcing, usually brand agnostic infrastructure or software frameworks that can be used to build other products.
+For example, Facebook's web interface is built on top of their open source web framework React, or Android phones which all come with closed source customizations built on top of the open source core. [fn:exceptions]
+
+When some new software product must be built, companies face a few options for core technologies:
+1) Build everything in house and keep it closed source
+2) Build everything in house and open source the core framework 
+3) Build on top of a preexisting open source framework
+
+In all cases the main scarce resource is developer time, or the amount of manpower available to work on the project.
+By participating in the open source community, companies also compete for volunteer developer time, contributions from entities or individuals outside of the company.
+The amount of free contribution from the outside depends on its popularity and if developers feel that it is worth their time to contribute, i.e. the better the project is the more support it will garner.
+This of course improves brand perception and could potentially attract talent for the company.
+However, open sourcing software frameworks allows other companies to build their products on them, which may eventually lead to competition.
+Open source software may also pose a risk to companies since it may allow information on future products or services to be leaked; changes to the core open source portion necessary to support some new functionality may be noticed by outsiders.
+
+
+[fn:exceptions] This generally only applies when profit is derived directly from the final piece of software.
+Other business models may be more liberal with what they open source.
+Some examples include Prusa Research open sources nearly everything from hardware designs to software, instead making money by providing a product with strict quality control, Redhat which only offers open source software while making money by offering support on using their software, or Amazon who sells computation time.
