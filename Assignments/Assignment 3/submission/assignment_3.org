@@ -1,0 +1,244 @@
+#+TITLE: MECH 431 2019S - Assignment 3
+#+SUBTITLE: The Pump
+#+AUTHOR: Jasper Chan - 37467164
+#+OPTIONS: toc:nil
+#+BEGIN_SRC ipython :session :results silent :exports none
+import numpy as np
+#+END_SRC
+* 
+Using rate of return analysis, identify which component you should replacing the existing one with.
+#+BEGIN_SRC ipython :session :results raw drawer :exports code
+failure_rate = 0.4
+failure_cost = -425
+annual_volume = 250
+unit_cost = -150
+analysis_period = 5
+
+# Ignore pumps sold before RND decision, all old pumps will have the same
+# failure rate and have the same NPV cost
+def get_defects(units_sold, failure_rate, warranty_period=2):
+    units_under_warranty = []
+
+    for idx, _ in enumerate(units_sold):
+        if idx == 0:
+            units_under_warranty.append(units_sold[idx])
+        elif idx < warranty_period:
+            units_under_warranty.append(sum(units_sold[:(idx + 1)]))
+        else:
+            units_under_warranty.append(
+                sum(units_sold[(idx - warranty_period + 1):(idx + 1)]))
+
+    units_under_warranty = np.array(units_under_warranty)
+    defects = failure_rate*units_under_warranty
+
+    return defects
+
+units_sold = np.array([annual_volume for _ in range(analysis_period)])
+warranty = get_defects(units_sold, failure_rate)
+warranty_costs = failure_cost * warranty
+
+unit_costs = unit_cost * units_sold
+
+total_costs = warranty_costs + unit_costs
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[186]:
+:END:
+** Option Agnostic Costs
+I'm going to assume that the board redesign will not be backwards compatible and hence failed components will be replaced with components of the same revision (i.e. pumps sold in the initial 6 months always have a failure rate of 40%)
+#+BEGIN_SRC ipython :session :results none :exports code
+old_units_sold = np.array([0 if i else annual_volume/2
+                           for i in range(analysis_period)])
+old_warranty = get_defects(old_units_sold, failure_rate)
+old_unit_costs = unit_cost * old_units_sold
+
+new_units_sold = np.array([annual_volume if i else annual_volume/2
+                           for i in range(analysis_period)])
+#+END_SRC
+
+** Option 1
+#+BEGIN_SRC ipython :session :results raw drawer :exports both
+rnd1 = -80000
+unit_cost1 = -330
+failure_rate1 = 0
+
+
+new_warranty1 = get_defects(new_units_sold, failure_rate1)
+warranty_costs1 = failure_cost * (new_warranty1 + old_warranty)
+
+new_unit_costs1 = unit_cost1 * new_units_sold
+unit_costs1 = old_unit_costs + new_unit_costs1
+    
+total_costs1 = warranty_costs1 + unit_costs1
+total_savings1 = total_costs1 - total_costs
+
+cashflow1 = np.insert(total_savings1, 0, rnd1)
+
+f"{round(np.irr(cashflow1)*100)}%"
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[188]:
+: '16%'
+:END:
+
+** Option 2
+#+BEGIN_SRC ipython :session :results raw drawer :exports both
+rnd2 = -145000
+unit_cost2 = -50
+failure_rate2 = 0.05
+
+new_warranty2 = get_defects(new_units_sold, failure_rate2)
+warranty_costs2 = failure_cost * (new_warranty2 + old_warranty)
+
+new_unit_costs2 = unit_cost2 * new_units_sold
+unit_costs2 = old_unit_costs + new_unit_costs2
+
+total_costs2 = warranty_costs2 + unit_costs2
+total_savings2 = total_costs2 - total_costs
+
+cashflow2 = np.insert(total_savings2, 0, rnd2)
+
+#inc_cashflow = cashflow2 - cashflow1
+
+f"{round(np.irr(cashflow2)*100)}%"
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[190]:
+: '40%'
+:END:
+
+** Conclusion
+Option 1 does not meet the MARR, and so should not be pursued
+* 
+The company has potential alternate financing arrangements with different interest rates.
+Identify what interest rates make each option (including not changing the design) the most viable.
+
+#+BEGIN_SRC ipython :session :results output :exports both
+
+# Set up cashflows for each option
+total_costs_nothing = np.insert(total_costs, 0, 0)
+total_costs_military = np.insert(total_costs1, 0, rnd1)
+total_costs_custom = np.insert(total_costs2, 0, rnd2)
+
+ideal_range = [[], [], []]
+
+# Iterate over interest rates from 0% to 99%
+for interest in range(100):
+    r = interest/100
+    # Find NPVs for each option
+    npv0 = np.npv(r, total_costs_nothing)
+    npv1 = np.npv(r, total_costs_military)
+    npv2 = np.npv(r, total_costs_custom)
+    npvs = [npv0, npv1, npv2]
+    # Find the least costly option
+    best = max(npvs)
+    best_idx = npvs.index(best)
+    # Keep track of which option is ideal for each interest rate
+    ideal_range[best_idx].append(r)
+
+out = ""
+for idx, rng in enumerate(ideal_range):
+    if len(rng) == 0:
+        out += f"Option {idx}, is not ideal for any interest rate\n"
+    elif len(rng) == 1:
+        out += f"Option {idx}, is ideal at an interest rate of {rng[0]*100}%\n"
+    else:
+        out += (f"Option {idx} is ideal for interest rates "
+                f"between {rng[0]*100}% and {rng[-1]*100}%\n")
+
+out += "(Option 0 is doing nothing)"
+
+print(out)
+#+END_SRC
+
+#+RESULTS:
+: Option 0 is ideal for interest rates between 40.0% and 99.0%
+: Option 1, is not ideal for any interest rate
+: Option 2 is ideal for interest rates between 0.0% and 39.0%
+: (Option 0 is doing nothing)
+* 
+Typical rates of return for medical technology companies are around 20%.
+Discuss why you might want a different MARR for this particular project.
+
+If a project has an IRR equal to the MARR, then its NPV is 0, meaning you would be essentially investing money for 0 net gain.
+
+* 
+The financial department wants to determine the average annual cost it should expect for warranty returns
+Using your chosen option from part 1 and your company's internal MARR, estimate the annual warranty costs for the next 4 years, including any fixed and one-time costs associated with changing the design.
+Assume sales remain constant.
+
+#+BEGIN_SRC ipython :session :results none :exports code
+def npv_to_eacf(npv, r, n):
+    eacf = (r * npv)/(1 - (1 + r)**(-n))
+    return eacf
+#+END_SRC
+
+#+BEGIN_SRC ipython :session :results raw drawer :exports both
+n = 4
+marr = 0.2
+# Set up cashflows for each option
+warranty_costs_nothing = np.insert(warranty_costs[:n], 0, 0)
+warranty_costs_military = np.insert(warranty_costs1[:n], 0, rnd1)
+warranty_costs_custom = np.insert(warranty_costs2[:n], 0, rnd2)
+
+warranty_npv_nothing = np.npv(marr, warranty_costs_nothing)
+warranty_npv_military = np.npv(marr, warranty_costs_military)
+warranty_npv_custom = np.npv(marr, warranty_costs_custom)
+
+
+warranty_eacf_nothing = npv_to_eacf(
+    warranty_npv_nothing, marr, n)
+warranty_eacf_military = npv_to_eacf(
+    warranty_npv_military, marr, n)
+warranty_eacf_custom = npv_to_eacf(
+    warranty_npv_custom, marr, n)
+
+f"{'-' if warranty_eacf_custom < 0 else ''}${np.abs(warranty_eacf_custom):.2f}"
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[204]:
+: '-$75900.15'
+:END:
+
+* 
+IF your company can borrow the funds to redesign at 8% and reinvest any savings at 22%, which option is ideal now?
+
+#+BEGIN_SRC ipython :session :results none :exports none
+finance_rate = 0.08
+reinvest_rate = 0.22
+#+END_SRC
+
+** Option 1
+#+BEGIN_SRC ipython :session :results raw drawer :exports both
+f"{round(np.mirr(cashflow1, finance_rate, reinvest_rate)*100)}%"
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[205]:
+: '18.0%'
+:END:
+
+** Option 2
+#+BEGIN_SRC ipython :session :results raw drawer :exports both
+f"{round(np.mirr(cashflow2, finance_rate, reinvest_rate)*100)}%"
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[207]:
+: '32.0%'
+:END:
+
+** Conclusion
+Option 1 still does not meet the MARR, and so should not be pursued
+
