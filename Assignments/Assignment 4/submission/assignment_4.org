@@ -1,0 +1,130 @@
+#+TITLE: MECH 431 2019S - Assignment 4
+#+SUBTITLE: The Assignment With no Name
+#+AUTHOR: Jasper Chan - 37467164
+#+OPTIONS: toc:nil
+#+LATEX_HEADER: \setlength{\parindent}{0pt}
+#+LATEX_HEADER: \setlength{\parskip}{12pt}
+#+BEGIN_SRC ipython :session :results silent :exports none
+import numpy as np
+#+END_SRC
+* 
+A donor wishes to endow a scholarship fund with sufficient money to pay out a $15,000 scholarship per year in perpetuty.
+
+The donor wishes for the scholarship payment to grow to match inflation each year.
+Tuition fees are expected to rise at a rate of 2.2% per year.
+
+If the nominal rate of return the endowment fund expects to receive is 6% per year:
+** 
+How much needs to be donated to the endowment fund to provide the scholarship?
+
+Let's start out with some initial principal $P_0$.
+Every year we need to pay out the annual scholarship $A_n = A_1(1.022)^{n-1}$, where the first payment $A_1 = 15000$.
+In order to sustain the growth in the scholarship, the remaining funds inside the endowment fund must also grow by 2.2%, thus:
+$$ P_n = P_{n-1} (1.022) $$
+
+With this, we can derive an equation for $P_0$
+
+\begin{align*}
+P_0(1.06) - A_1 &= P_1 \\
+P_0(1.06) - A_1 &= P_0(1.022) \\
+P_0 &= \frac{A_1}{1.06 - 1.022} \\
+\end{align*}
+
+#+BEGIN_SRC ipython :session :results raw drawer :exports results
+r = 0.06
+f = 0.022
+A1 = 15000
+
+P0 = A1/(r - f)
+
+f"P_0 = ${P0:.2f}"
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[4]:
+: 'P_0 = $394736.84'
+:END:
+
+\pagebreak
+We can sanity check our answer by generalizing the above formula:
+$$ P_n = \frac{A_{n+1}}{1.06 - 1.022} $$
+
+#+BEGIN_SRC ipython :session :results raw drawer :exports both
+def get_A(n):
+    return A1*(1 + f)**(n-1)
+
+def get_P(n):
+    return get_A(n + 1)/(r - f)
+
+def check_P0():
+    Pn = P0
+    for n in range(1, 100):
+        Pref = get_P(n)
+        Pn = Pn*(1 + r) - get_A(n)
+
+        # Allow for floating point errors
+        if np.abs(Pn - Pref) > 0.0001:
+            return f"Error: n = {n}, {Pn} != {Pref}"
+
+    return f"P0 appears to be correct"
+
+check_P0()
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[10]:
+: 'P0 appears to be correct'
+:END:
+
+** 
+What will be the nominal value of the scholarship be in five years?
+#+BEGIN_SRC ipython :session :results raw drawer :exports both
+A5 = get_A(5)
+
+f"A_5 = ${A5:.2f}"
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[20]:
+: 'A_5 = $16364.20'
+:END:
+
+* 
+You purchase a small used condominium to rent out as an illegal AirBnB suite.
+While unlicensed by the city, you decide angering the Canada Revenue Agency would be a bit much even for you, so you still declare income and file taxes on your income.
+
+Based on your friend who is doing something similar, you expect the folowing reenues per season:
+- Winter: $6,000
+- Spring: $11,000
+- Summer: $24,000
+- Fall: $11,000
+
+However, again based on your friend's experience, the revenues are highly variable.
+The revenues of any season can vary significantly from the expected values.
+The variance appears to be normally distributed, with a standard deviation equal to 20% of the mean seasonal rent
+(e.g. winter has a mean revenue of $6000, with a standard deviation of $1200).
+You are hiring a property management firm which charges 15% of the actual rent received to clean and maintain the unit.
+
+The condominium cost you $200,000, which based on the assesment consists of 20% building value and 80% land value.
+You also paid $4,800 in property transfer tax, and made $22,000 of improvements to the unit.
+Your nominal tax rate is 25%.
+Assume all relevant depreciable costs are included in CCA Class 1.
+** 
+What is the expected after-tax IRR of renting out your suite for five years?
+
+asdf
+** 
+Using Before Tax Cashflow analysis, create a simulation to estimate the expected IRR, and estimate the variance of your return.
+Describe the distribution of the IRR.
+What variable is the output most sensitive to?
+
+asdf
+** 
+What is the likelihood you will make a positive rate of return (before tax)?
+
+asdf
+  
