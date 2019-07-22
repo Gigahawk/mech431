@@ -5,7 +5,10 @@
 #+LATEX_HEADER: \setlength{\parindent}{0pt}
 #+LATEX_HEADER: \setlength{\parskip}{12pt}
 #+BEGIN_SRC ipython :session :results silent :exports none
+%matplotlib inline
+%config InlineBackend.figure_format = 'svg'
 import numpy as np
+from matplotlib import pyplot as plt
 #+END_SRC
 * 
 A donor wishes to endow a scholarship fund with sufficient money to pay out a $15,000 scholarship per year in perpetuty.
@@ -97,7 +100,7 @@ f"A_5 = ${A5:.2f}"
 You purchase a small used condominium to rent out as an illegal AirBnB suite.
 While unlicensed by the city, you decide angering the Canada Revenue Agency would be a bit much even for you, so you still declare income and file taxes on your income.
 
-Based on your friend who is doing something similar, you expect the folowing reenues per season:
+Based on your friend who is doing something similar, you expect the folowing revenues per season:
 - Winter: $6,000
 - Spring: $11,000
 - Summer: $24,000
@@ -113,18 +116,165 @@ The condominium cost you $200,000, which based on the assesment consists of 20% 
 You also paid $4,800 in property transfer tax, and made $22,000 of improvements to the unit.
 Your nominal tax rate is 25%.
 Assume all relevant depreciable costs are included in CCA Class 1.
+
+#+BEGIN_SRC ipython :session :results none :exports code
+analysis_period = 5
+
+prop_value_ratio = 0.2
+condo_cost = 200000
+property_transfer = 4800
+improvements = 22000
+
+cca_rate = 0.04
+maintenance_rate = 0.15
+tax_rate = 0.25
+
+winter_rev = 6000
+spring_rev = 11000
+summer_rev = 24000
+autumn_rev = 11000
+winter_stddev = winter_rev * 0.2
+spring_stddev = spring_rev * 0.2
+summer_stddev = summer_rev * 0.2
+autumn_stddev = autumn_rev * 0.2
+
+annual_revs = [
+               (winter_rev, winter_stddev),
+               (spring_rev, spring_stddev),
+               (summer_rev, summer_stddev),
+               (autumn_rev, autumn_stddev)
+               ]
+#+END_SRC
 ** 
 What is the expected after-tax IRR of renting out your suite for five years?
 
-asdf
+Our purchases happen in the zeroth year, but for CCA purposes the payment is not accounted for in the first year.[fn:prop_transfer]
+[fn:prop_transfer] The property transfer tax is a part of the cost of purchasing the condo, and is therefore also split between property and land value.
+This is described in [[https://www.canada.ca/en/revenue-agency/services/tax/businesses/topics/rental-income/capital-cost-allowance-rental-property/example-capital-cost-allowance-calculation.html][Example of capital cost allowance (CCA) calculation]].
+
+
+
+
+
+#+BEGIN_SRC ipython :session :results raw drawer :exports code
+# Helper functions
+def get_CCAs(purchases):
+    CCAs = []
+    UCC = 0
+    purchases.insert(0,0)
+    for i in range(1, len(purchases)):
+        UCC += purchases[i]/2 + purchases[i-1]/2
+        CCA = cca_rate * UCC
+        UCC -= CCA
+        CCAs.append(CCA)
+    CCAs = np.array(CCAs)
+
+    return CCAs
+
+def get_revs(analysis_period, random=False):
+    revs = []
+    for _ in range(analysis_period):
+        annual_rev = 0
+        for mean_rev, stddev in annual_revs:
+            if random:
+                n = np.random.randn()
+            else:
+                n = 0
+            n = n*stddev
+            rev = mean_rev + n
+            annual_rev += rev
+        revs.append(annual_rev)
+    revs = np.array(revs)
+    return revs
+
+def get_costs(revs):
+    return maintenance_rate * revs
+#+END_SRC
+\pagebreak
+#+BEGIN_SRC ipython :session :results raw drawer :exports both
+dep_purchases = [0 for _ in range(analysis_period)]
+dep_purchases[0] = improvements + prop_value_ratio*(condo_cost + property_transfer)
+
+CCAs = get_CCAs(dep_purchases)
+revs = get_revs(analysis_period)
+costs = get_costs(revs)
+BTCF = revs - costs
+taxable_income = BTCF - CCAs
+tax = tax_rate * taxable_income
+ATCF = BCTF - tax
+
+# Insert the initial purchase into the cashflow
+startup_costs = -(improvements + condo_cost + property_transfer)
+cashflow = np.insert(ATCF, 0, startup_costs)
+irr = np.irr(cashflow)
+f"IRR: {irr*100:.1f}%"
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[87]:
+: 'IRR: -9.2%'
+:END:
+
 ** 
 Using Before Tax Cashflow analysis, create a simulation to estimate the expected IRR, and estimate the variance of your return.
 Describe the distribution of the IRR.
 What variable is the output most sensitive to?
 
-asdf
+#+BEGIN_SRC ipython :session :results silent :exports code
+rand_irrs = []
+for _ in range(100000):
+    rand_revs = get_revs(analysis_period, random=True)
+    rand_costs = get_costs(rand_revs)
+    rand_BTCF = rand_revs - rand_costs
+    rand_cashflow = np.insert(rand_BTCF, 0, startup_costs)
+    rand_irrs.append(np.irr(rand_cashflow))
+
+rand_irrs = np.array(rand_irrs)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session :results raw drawer :exports both
+plt.hist(100*rand_irrs, bins=100, density=True)
+plt.xlabel("IRR (%)")
+plt.ylabel("Probability (%)")
+plt.title("Probability Distribution Function of IRR")
+
+irr_stddev = np.std(rand_irrs)
+irr_var = np.var(rand_irrs)
+irr_mean = np.mean(rand_irrs)
+print(f"""The IRR distribution has a mean of {irr_mean*100:.1f}%,
+a standard deviation of {irr_stddev*100:.1f}%,
+and a variance of {irr_var:e}.""")
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[182]:
+: 'The IRR distribution has a mean of -0.9%,\na standard deviation of 1.7%,\nand a variance of 2.723330e-04.'
+[[file:./obipy-resources/NgJBlL.svg]]
+:END:
+
+All of the variables get summed up into a annual revenue and the costs are relative to the revenue, so any absolute change in any particular season will result in the same change in the IRR.
+Because the mean summer revenue is the highest, it will produce the largest change in IRR for any particular relative change.
+
 ** 
 What is the likelihood you will make a positive rate of return (before tax)?
 
-asdf
+#+BEGIN_SRC ipython :session :results raw drawer :exports both
+num_irrs = len(rand_irrs)
+num_pos_irrs = sum(1 for i in rand_irrs if i > 0)
+
+prob_pos_irr = num_pos_irrs / num_irrs
+
+(f"There is a {prob_pos_irr*100:.1f}% chance "
+ "of having a positive rate of return before tax")
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[123]:
+: 'There is a 29.9% chance of having a positive rate of return before tax'
+:END:
+
   
