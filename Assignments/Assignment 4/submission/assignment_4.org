@@ -233,7 +233,7 @@ for _ in range(100000):
 rand_irrs = np.array(rand_irrs)
 #+END_SRC
 
-#+BEGIN_SRC ipython :session :results raw drawer :exports both
+#+BEGIN_SRC ipython :session :results output :exports both
 plt.hist(100*rand_irrs, bins=100, density=True)
 plt.xlabel("IRR (%)")
 plt.ylabel("Probability (%)")
@@ -248,11 +248,9 @@ and a variance of {irr_var:e}.""")
 #+END_SRC
 
 #+RESULTS:
-:RESULTS:
-# Out[182]:
-: 'The IRR distribution has a mean of -0.9%,\na standard deviation of 1.7%,\nand a variance of 2.723330e-04.'
-[[file:./obipy-resources/NgJBlL.svg]]
-:END:
+: The IRR distribution has a mean of -0.9%,
+: a standard deviation of 1.7%,
+: and a variance of 2.723330e-04.
 
 All of the variables get summed up into a annual revenue and the costs are relative to the revenue, so any absolute change in any particular season will result in the same change in the IRR.
 Because the mean summer revenue is the highest, it will produce the largest change in IRR for any particular relative change.
