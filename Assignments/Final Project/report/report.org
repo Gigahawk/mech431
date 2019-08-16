@@ -1,0 +1,44 @@
+#+TITLE: MECH 431 Major Report
+#+SUBTITLE: Economic Viability of Running a Local 3D Printing Service
+#+AUTHOR: Jasper Chan - 37467164
+#+LATEX_HEADER: \setlength{\parskip}{12pt}
+* Introduction and Problem Statement
+In recent years, 3D printing has exploded in accessibility in terms of both cost and overall ease of use.
+However, there are still plenty of reasons why the average person wouldn't have a personal 3D printer.
+Most people simply wouldn't use it enough to justify the space it takes up, or the time and effort required for maintenance.
+
+For this purpose, many services have popped up offering 3D printing services.
+These can range from high end offereings producing parts with tight tolerances suitable for engineering purposes, to libraries using consumer grade printers.
+Of particular note, the engineering design team UBC Rapid offers a service to students and faculty for a very reasonable price.
+In fact, they claim to be "one of the most affordable [3D printing services] on campus".
+However, the flat $5 CAD setup fee often overshadows the material cost on small parts, while material costs can quickly add up for larger ones.
+
+With the relatively low barrier to entry, it should be possible to run a similar enterprise to compete with and undercut Rapid's service.
+This report will explore the capital required to bootstrap and the income needed to maintain such an enterprise.
+* Project Plan
+** Target Demographic
+All of rapids people
+** Competition
+rapid
+** Equipment and Consumables
+cost of printers
+cost of filament
+* Economic Analysis
+** Project Revenues
+** Project Costs
+** Taxes
+* Alternate Options
+** Print Technologies
+SLA?
+** Material Selection
+more materials
+** Design Consultation
+time sink
+* Risk
+** Market Size
+** Failed or Unusable Prints
+* Environmental and Social Considerations
+** Reusing Spools
+** Recycling Scrap Material
+* Conclusion
+probably not worth the effort but you could probably do it
