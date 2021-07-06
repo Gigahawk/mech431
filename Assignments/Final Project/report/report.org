@@ -1,7 +1,31 @@
-#+TITLE: MECH 431 Major Report
+#+TITLE: MECH 431 Report - PolygonPaths
 #+SUBTITLE: Economic Viability of Running a Local 3D Printing Service
 #+AUTHOR: Jasper Chan - 37467164
 #+LATEX_HEADER: \setlength{\parskip}{12pt}
+#+BEGIN_SRC ipython :session :exports none :results none
+%matplotlib inline
+%config InlineBackend.figure_format = 'svg'
+#+END_SRC
+
+#+BEGIN_SRC ipython :session :exports none :results none
+import math
+import calendar
+from datetime import datetime, date, timedelta
+from enum import Enum
+from copy import deepcopy
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.dates import AutoDateFormatter, AutoDateLocator, date2num, num2date
+import bigfloat as bf
+import scipy
+from scipy.optimize import curve_fit
+from scipy.stats import rv_continuous
+from currency_converter import CurrencyConverter
+#+END_SRC
+
+
+\newpage
 * Introduction and Problem Statement
 In recent years, 3D printing has exploded in accessibility in terms of both cost and overall ease of use.
 However, there are still plenty of reasons why the average person wouldn't have a personal 3D printer.
@@ -9,36 +33,818 @@ Most people simply wouldn't use it enough to justify the space it takes up, or t
 
 For this purpose, many services have popped up offering 3D printing services.
 These can range from high end offereings producing parts with tight tolerances suitable for engineering purposes, to libraries using consumer grade printers.
-Of particular note, the engineering design team UBC Rapid offers a service to students and faculty for a very reasonable price.
-In fact, they claim to be "one of the most affordable [3D printing services] on campus".
+Of particular note, the engineering design team UBC Rapid offers a service to students and faculty for a reasonable price.
+In fact, they claim to be "one of the most affordable [3D printing services] on campus" cite:rapidhome.
 However, the flat $5 CAD setup fee often overshadows the material cost on small parts, while material costs can quickly add up for larger ones.
 
-With the relatively low barrier to entry, it should be possible to run a similar enterprise to compete with and undercut Rapid's service.
-This report will explore the capital required to bootstrap and the income needed to maintain such an enterprise.
+This report will explore PolygonPaths, a reimagining of UBC Rapid as a for profit business, run by myself.
+
+\newpage
 * Project Plan
 ** Target Demographic
-All of rapids people
+For easier analysis and comparison to UBC Rapid, the target demographic of PolygonPaths will be UBC students and faculty.
+If I were to actually start this business, I would likely choose the same demographic,
+since it would generally be hard to deliver prints to customers outside of campus while attending classes.
+From 2018, approximately 150 orders were submitted, 100 were fulfilled.[fn:internal]
+Because Rapid generates quotes manually
+(i.e. someone has to download the print files and then run them through a program to get a cost estimate),
+quotes can take up to a day to process.
+However, automation of this process is fairly trivial and in fact, I've written proof of concept software that accomplishes this cite:rpmp. 
+
+For the purposes of this report, I will assume that there will be 150 print orders per year due to a better ordering experience.
+An analysis on the cost and time distribution of orders will also happen later on, but suffice to say that orders do come in throughout the year
+
+[fn:internal] As a member of UBC Rapid, I have access to this data, provided in the appendix is a copy of our internal records with personal details removed.
+Please send me an email at [[mailto:jasperchan515@gmail.com][jasperchan515@gmail.com]] if you think any information is missing.
+
 ** Competition
-rapid
+Aside from Rapid, there are other already established 3D printing services on campus, however most of them leave a lot to be desired.
+- UBC ECE cite:ubcece
+  - Setup fee $15 CAD, 10\cent/gram.
+  - Limited demographic, only available to ECE students in project courses
+  - Only offers prints using PLA plastic.
+- UBC Bookstore cite:ubcbookstore
+  - No setup fee, 25\cent/gram
+  - Link now redirects to a different page, as far as I know the service is still available, just not advertised heavily.
+- UBC Chem E Car cite:chemecar
+  - Setup fee $5 CAD, 25\cent/gram
+  - No mention of material choice
+  - Website no longer maintained, service does not appear to run anymore.
+There are also various printers that are available for student use on campus, but all of them require signing up for time slots, and often break down due to unsupervised use. As such, public printers will not be considered competition.
 ** Equipment and Consumables
-cost of printers
-cost of filament
-* Economic Analysis
-** Project Revenues
-** Project Costs
+At any given time, UBC Rapid tends to have 3 functioning printers ready.
+However, they are rarely ever all being used at once.
+Because of this, PolygonPaths will purchase 3 printers under the assumption that two will always be available for use, with a third requiring maintenance due to print failures every two months.
+PolygonPaths' printer of choice will be the Creality3D CR-10, which offers a comparable print quality to the Prusa i3 MK2S printers that Rapid uses, while being significantly cheaper.
+While the Prusa offers a better overall user experience, as someone who is used to working with printers the extra cost offers no real benefit in terms of potential income.
+Minimizing the nominal cost of this initial investment is important because this venture is intended to be fundable by a student's savings account instead of taking out a loan.
+Most importantly, the CR-10 was released before the analysis period of this report, which is described under section ref:econ.
+Multiple sources cite:cr10chinapricer1,cr10chinapricer2,cr10aniwaa seem to indicate that the cost of each printer would have been $400 USD in at the time of purchase.
+
+For this analysis, PolygonPaths will only offer PETG for printing.
+In the past, PLA and ABS were the most common material options, however PETG is generally a good substitute for both materials, being both easy to print and having good mechanical properties.
+In reality, it is likely that PolygonPaths would stock a small amount of PLA and ABS, but I will consider it negligible for this analysis.
+One particular limitation of the Ender 3 is that it cannot print with flexible materials due to the design of the extruder, potentially turning away would be customers.
+However, from Rapid's data flexible prints only make up about 3% of requests and about 2% of income.
+Under the assumption that PolygonPaths will be run out of a dorm, storage space will be limited, so filament will be purchased as needed.
+Because of this, PolygonPaths will be unable to take advantage of purchasing materials in bulk, although the savings gained would be offset from having to purchase storage space.
+The per kg price of AmazonBasics filament fluctuates a little, but tends to hover around $20 CAD, which is the cost I will use.
+Delivery times and costs are assumed to be negligible due to access to Amazon Prime[fn:prime].
+Because I will be assuming the business is run out of a dorm I'm also living in, utilities cost will be considered part of my living costs and not a business expense.
+
+[fn:prime] I already use Amazon Prime for a lot of other personal things, so I will not include it as a business expense.
+
+* Economic Analysis label:econ
+For the sake of having a reasonable analysis period, I will assume that the business starts operating on September 7 2017, the beginning of UBC's 2017W session, conveniently coinciding with the actual beginning of Rapid's print service.
+The target demographic of UBC requires that I actually be at UBC, so the business will only operate during school terms, and not during co-op terms.
+Specifically, the business will operate for:
+- 2017W1
+- 2017W2
+- 2018W2
+- 2019W1
+- 2020W1
+- 2020W2
+** Seasonality of Orders
+Campus is most populated during the winter session, and as such the number of orders should be maximized during the winter session.
+This is seen in Rapid's historical data.
+[[file:rapid_time.svg]]
+
+For this analysis I will scale this histogram to contain a total of 150 orders, and then assume that each month will be normally distributed with a standard deviation of 25% of the average value
+
+** Price of Orders
+Not all print jobs cost the same, larger prints will inevitably cost more.
+A histogram of total income per transaction shows the probability distribution function roughly follows an exponential curve.
+[[file:rapid_cost.svg]]
+** Materials
+As stated above, I will be making the assumption that all print requests will be in PETG, which means the customer pays 20\cent per gram.
+Unlike UBC Rapid, PolygonPaths will offer all of the available colours of AmazonBasics PETG [fn:color].
+
+[fn:color] This factors into the simulation, if a customer requests a color that is not available, a new roll will have to be purchased.
+** Maintenance
+It's hard to predict what exactly will break, so I will allocate $100 CAD to the purchase of replacement parts every year.
+** Assets
+To bootstrap the business, I will buy 3 Creality3D CR-10 printers for $400 USD [fn:conversion] each one month prior to the start of 2017W1.
+At the end of 2020W2 (2021), I will sell all 3 printers for $200 CAD [fn:disposition] each.
+
+[fn:conversion] Prices listed in currencies other than CAD will be converted based on the exchange rate at time of transaction using CurrencyConverter cite:currencyconverter.
+[fn:disposition] It is hard to predict how much they will be worth in the future. Searches for used CR-10 printers on ebay seem to suggest that $200 is reasonable.
+
+** Project Costs and Revenues
+First, let's calculate our operating cashflows[fn:cf_imp]:
+#+BEGIN_SRC ipython :session :results raw drawer
+operating_cashflows = get_operating_cashflows()
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[16]:
+:END:
+
+[fn:cf_imp] See Appendix ref:simulation for implementation details.
+
+
+
+
+Next, we add our purchases and dispositions for the zero'th and last month
+#+BEGIN_SRC ipython :session :results raw drawer
+cashflows = deepcopy(operating_cashflows)
+
+# Prepend 0'th month onto cashflows
+cashflows["months"].insert(0, asset_purchase_month)
+cashflows["maintenance"].insert(0, 0)
+cashflows["filament"].insert(0, 0)
+cashflows["revenues"].insert(0, 0)
+
+# create an assets cashflow
+cashflows["assets"] = [0 for _ in range(len(cashflows["revenues"]))]
+cashflows["assets"][0] = -3 * asset_purchase_unit_cost
+
+# Append last month to cashflows
+cashflows["months"].append(asset_disposition_month)
+cashflows["maintenance"].append(0)
+cashflows["filament"].append(0)
+cashflows["revenues"].append(0)
+cashflows["assets"].append(3 * asset_disposition_unit_cost)
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[17]:
+:END:
+Now we can graph our total untaxed cashflow (including operating costs).
+#+BEGIN_SRC ipython :session :results raw drawer :exports results
+plt.bar(cashflows["months"], cashflows["revenues"], width=25, label="Income")
+plt.bar(cashflows["months"], cashflows["assets"], width=25, label="Assets")
+plt.bar(cashflows["months"], cashflows["maintenance"], width=25, label="Maintenance")
+plt.bar(cashflows["months"], cashflows["filament"], width=25, label="Filament",
+        bottom=cashflows["maintenance"])
+plt.xticks(rotation="vertical")
+plt.axes().set_xlim(right=cashflows["months"][-1] + timedelta(days=30))
+plt.axes().set_xlim(left=cashflows["months"][0] - timedelta(days=30))
+plt.axhline(linewidth=1, color='k')
+plt.title("Total Untaxed Cashflow for PolygonPaths")
+plt.ylabel("Cashflow (CAD)")
+_ = plt.legend(bbox_to_anchor=(1.4, 1))
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[18]:
+[[file:./obipy-resources/R2UnCa.svg]]
+:END:
+We can also get the yearly cashflow for easier analysis.
+#+BEGIN_SRC ipython :session :results raw drawer
+yearly_cashflows = get_yearly_cashflow(cashflows)
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[19]:
+:END:
+
+:END:
+#+BEGIN_SRC ipython :session :results raw drawer :exports results
+plt.bar(yearly_cashflows["years"], yearly_cashflows["revenues"], width=300, label="Income")
+plt.bar(yearly_cashflows["years"], yearly_cashflows["assets"], width=300, label="Assets")
+plt.bar(yearly_cashflows["years"], yearly_cashflows["maintenance"], width=300, label="Maintenance")
+plt.bar(yearly_cashflows["years"], yearly_cashflows["filament"], width=300, label="Filament",
+        bottom=yearly_cashflows["maintenance"])
+plt.xticks(rotation="vertical")
+plt.axes().set_xlim(right=yearly_cashflows["years"][-1] + timedelta(days=200))
+plt.axes().set_xlim(left=yearly_cashflows["years"][0] - timedelta(days=200))
+plt.axhline(linewidth=1, color='k')
+plt.title("Total Untaxed Cashflow for PolygonPaths")
+plt.ylabel("Cashflow (CAD)")
+_ = plt.legend(bbox_to_anchor=(1.4, 1))
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[20]:
+[[file:./obipy-resources/cHWkgN.svg]]
+:END:
 ** Taxes
+As a small business, PolygonPaths has a federal income tax rate is 10% cite:taxrate [fn:taxnote] and a provincial income tax rate of 2% cite:taxrateprov, for a total tax rate of 12%.
+[fn:taxnote] The tax rate has actually recently changed slightly, however for this analysis I will assume it is always 10%
+
+
+
+
+
+First let's group the relevant cashflows together:
+#+BEGIN_SRC ipython :session :results raw drawer
+assets = np.array(yearly_cashflows["assets"])
+operating_revenue = np.array(yearly_cashflows["revenues"])
+operating_costs = (np.array(yearly_cashflows["maintenance"]) +
+                   np.array(yearly_cashflows["filament"]))
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[21]:
+:END:
+
+With this we can find our BTCF:
+#+begin_src ipython :session :results raw drawer
+btcf = operating_revenue - operating_costs
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[22]:
+:END:
+
+To find our ATCF, we need to calculate our CCA.
+The printers are classified as CCA Class 53 assets with a rate of 50%.
+#+BEGIN_SRC ipython :session :results raw drawer
+purchases = list(assets)
+empty = [0 if p != purchases[-1] else 1 for p in purchases]
+
+ccas, uccs = get_CCAs(purchases, cca_rate, dispositions=True, empty=empty)
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[23]:
+:END:
+
+Now we can find our ATCF:
+#+BEGIN_SRC ipython :session :results raw drawer
+taxable_income = btcf - ccas
+tax = tax_rate * taxable_income
+atcf = btcf - tax
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[24]:
+:END:
+
+** NPV Analysis
+With the ATCF calculated, we can now determine the NPV of the whole project, with a reasonable discount rate of 10%.
+#+BEGIN_SRC ipython :session  :results raw drawer :exports both
+total_cashflow = assets + atcf
+npv = np.npv(npv_discount_rate, total_cashflow)
+f'After tax NPV: ${npv:.2f}'
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[25]:
+: 'After tax NPV: $5721.06'
+:END:
+** IRR Analysis
+Calculating the IRR for this project is a little bit complicated, since the initial investment happens in the same year as the first profits.
+In order to get a better idea of the of the IRR for the project, I will "extend" the analysis period by moving the initial asset purchase to a previous year.
+The asset disposition at the end remainse unchanged.
+#+BEGIN_SRC ipython :session :results raw drawer :exports both
+extended_atcf = np.insert(atcf, 0, 0)
+extended_assets = np.insert(assets, 1, 0)
+extended_cashflow = extended_atcf + extended_assets
+
+irr = np.irr(extended_cashflow)
+f'After tax IRR: {irr:.3f}'
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[26]:
+: 'After tax IRR: 0.955'
+:END:
+** Risk Analysis
+The numbers above use a single simulation, in order to get a better idea of the IRR and NPV, we can run the simulation multiple times:
+
+#+BEGIN_SRC ipython :session :results raw drawer :exports code :eval no-export
+npv_irr_list = []
+n = 100
+for _ in range(n):
+    npv_irr_list.append(gen_npv_irr())
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[28]:
+:END:
+#+BEGIN_SRC ipython :session :results output
+npvs = np.array(npv_irr_list)[:,0]
+irrs = np.array(npv_irr_list)[:,1]
+
+npv_avg = np.average(npvs)
+npv_std = np.std(npvs)
+irr_avg = np.average(irrs)
+irr_std = np.std(irrs)
+
+out = f"""NPV Average: ${npv_avg:.2f}, NPV Standard Deviation: ${npv_std:.2f}
+IRR Average: {irr_avg:.3f}, IRR Standard Deviation {irr_std:.3f}"""
+
+print(out)
+#+END_SRC
+
+#+RESULTS:
+: NPV Average: $5997.32, NPV Standard Deviation: $457.12
+: IRR Average: 0.964, IRR Standard Deviation 0.071
+
+We can also graph the distribution of NPV:
+#+BEGIN_SRC ipython :session :results raw drawer :exports results
+n = 100
+plt.hist(npvs)
+plt.title(f"Distribution of NPVs for PolygonPaths over {n} simulations")
+plt.xlabel("NPV (CAD)")
+_ = plt.ylabel("# of occurences")
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[40]:
+[[file:./obipy-resources/adGVBx.svg]]
+
+
+
+And the IRR as well:
+#+BEGIN_SRC ipython :session :results raw drawer :exports 
+plt.hist(irrs)
+plt.title(f"Distribution of IRRs for PolygonPaths over {n} simulations")
+plt.xlabel("IRR")
+_ = plt.ylabel("# of occurences")
+#+END_SRC
+#+RESULTS:
+:RESULTS:
+# Out[165]:
+[[file:./obipy-resources/MzsdSl.svg]]
+:END:
+:RESULTS:
+# Out[41]:
+[[file:./obipy-resources/38vtyG.svg]]
+:END:
+From this we can see that using the assumed standard deviation in customers of 25% each month, the business still remains comfortably profitable.
 * Alternate Options
 ** Print Technologies
-SLA?
+This report focuses on FDM 3D printing, mostly because it is what I am familiar with.
+FDM printing has been the most common form of (consumer grade) printing for the past decade, largely driven by the RepRap community offering open source designs that have allowed companies to lower RnD costs and get to market quicker.
+Because of this ubiquity, it isn't unreasonable to assume that there are others who would attempt to run a similar business, potentially overcrowding the available market.
+
+An alternative to FDM printers are stereolithography (SLA) printers, which use light to cure a photosensitive resin layer by layer.
+While limited in size, this technology offers significantly higher resolution prints compared to FDM technologies, allowing PolygonPaths to target new markets within UBC, particularly individuals interested in making small parts with high detail, such as figurines, or other artistic designs.
+The main tradeoffs to using this technology is related to handling of the liquid resin.
+The resins commonly used tend to release more toxic fumes compared to FDM printing, requiring better airflow and/or protective equipment which may not be available in a small dorm room.
+They also can cause allergic reactions if left in extended contact with skin, meaning users have to be more careful when handling it.
+SLA printers are also have a significantly higher upfront cost, especially during the beginning of the analysis period, which would make it difficult to bootstrap off of a student's savings.
 ** Material Selection
-more materials
-** Design Consultation
-time sink
-* Risk
+This analysis makes the assumption that other filament materials will not be offered.
+One way for PolygonPaths to distinguish itself from other services would be to offer printing in materials not commonly offered by other services.
+Again there is the concern of storage space.
+Since these less common filaments will be consumed more slowly, they will take up space in storage for an extended time.
+Another concern is that the printers PolygonPaths has chosen will be unable to consistently print with the material without significant upgrades or using a different printer all together, again making it harder to bootstrap with a savings account.
+* Other Risks
 ** Market Size
+Because this business is being run on the side while I'm attending classes, the bulk of my market is essentially limited to people who frequent the campus, preventing growth.
+There is also the risk that as 3D printing grows more accessible, more people will simply purchase a printer for personal use, shrinking the market.
+However, beacuse this business venture is limited to the length of my time at UBC, it is unlikely that these risks would manifest during the analysis period.
 ** Failed or Unusable Prints
+Like all machines, 3D printers are also susceptible to issues, and FDM printers even more so simply due to their core design.
+However, due to the high nominal profit margins on just the filament, the most important loss from a failed print is actually time.
+This report doesn't go into an analysis on the temporal details regarding each transaction, but the potential losses can be minimized by advertising a turnaround time with enough buffer to handle failed prints.
+
+Another risk from failed prints is a clogged extruder nozzle.
+Once the nozzle is clogged, the printer can no longer print until it becomes unclogged.
+This could require a full disassembly of the extruder, and sometimes a full replacement in particularly bad cases.
+The risk of a clogged nozzle was taken into consideration by buying 3 printers and allocating $100 CAD for spare parts each year
 * Environmental and Social Considerations
 ** Reusing Spools
+Once a roll of filament is consumed, the remaining spool itself is essentially waste.
+There a few common ways to upcycle them into other things, such as storage containers cite:spooldrawer, however for the most part they get recycled or tossed in the garbage.
+
+To reduce this waste, Richard Horne has developed a Masterspool cite:masterspool.
+Masterspool is a standard that defines dimensions for a filament spool, allowing vendors to ship a bare roll of filament that can then be installed by the user.
+This analysis depends on purchasing filament via Amazon Prime in order to minimize the storage space required, and unfortunately it does not appear that Amazon is currently selling Masterspool compatible filament.
+However, with careful inventory management (or a large dorm), it would be possible to order Masterspool compatible filaments from other vendors to cut down on waste.
 ** Recycling Scrap Material
+Most filament materials are not accepted by recycling plants cite:recycling.
+For spools with too little material to complete a print, but are otherwise still good, filaments of the same base material can be joined together by carefully melting the ends together.
+For failed prints, there is little to be done.
+Depending on the area, it might be possible to find a recycling plants that does take it, but that is unlikely.
+There is also the potential to recycle failed prints by crushing them up and re-extruding them so that they can be used again, however the equipment currently available to do this produces filament with a significantly less consistent diameter or is prohibitively expensive.
+Because of this and the fact that recycling filament is a far more involved process compared to starting a print, it would be unsuitable for this particular venture.
 * Conclusion
-probably not worth the effort but you could probably do it
+With the high profit margins of selling prints even at a very low price, anyone with even a small amount of savings could pursue a business like this.
+If the analysis period were to be moved forward to the present day, even cheaper printers printers would be available.
+For bootstrapping with an even smaller amount of funds, buying only one or two printers to start would also be viable.
+
+From an economic standpoint, the biggest assumption this report makes is the variability in orders.
+The overall trends pulled from Rapid's data fit the intuition, with higher numbers during the winter session, however there is not enough historical data to know how exactly it varies year to year.
+Even with a higher variance or a lower actual mean of total orders this business would still be comfortably profitable.
+
+However, this analysis ignores the fact that running a 3D printing business while in school likely means that prints will be happening through the night to meet deadlines.
+In a small dorm where the printers are likely to be in the same room as the bed, this may be a problem.
+While the hum of the motors might be easily drowned out with ear plugs or headphones, a machine crashing in the middle of the night or otherwise loudly failing may wake up the entrepreneur, who would then have to handle the problem while still drowsy.
+I would imagine that with repeated occurrences that this would become really stressful, and not something that I would personally pursue.
+
+#+LATEX: \appendix
+* Data Parsing and Graph Generation Code
+** Import data from CSV
+#+BEGIN_SRC ipython :session :results raw drawer
+rapid_revenue_df = pd.read_csv(
+    "./rapid_internal/rapid_revenue.csv",
+    converters = {
+        "Gross Profit": lambda s: float(s.replace("$", "")),
+        "Price Paid": lambda s: float(s.replace("$", "")),
+        })
+rapid_quote_df = pd.read_csv(
+    "./rapid_internal/rapid_order.csv")
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[11]:
+:END:
+
+** Generate time graph
+#+BEGIN_SRC ipython :session :results raw drawer
+rapid_order_ts = list(rapid_quote_df["Timestamp"])
+rapid_order_ts = [datetime.strptime(s, "%d/%m/%Y %H:%M:%S") for s in rapid_order_ts]
+rapid_order_months = [t.month for t in rapid_order_ts]
+num_time, _, _ = plt.hist(
+    rapid_order_months, bins=np.arange(13)+0.5, linewidth=1.2, edgecolor="black")
+plt.title("Orders Recieved by UBC Rapid")
+plt.xlabel("Month")
+plt.ylabel("# of orders")
+ticks = [calendar.month_name[m] for m in range(1,13)]
+plt.xticks(range(1,13), ticks, rotation="vertical")
+plt.savefig("rapid_time.svg")
+
+num_time = num_time / sum(num_time) * 150
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[12]:
+[[file:./obipy-resources/014ooP.svg]]
+:END:
+
+** Generate price histogram and define PDF
+#+BEGIN_SRC ipython :session :results raw drawer
+def exponential(x, a, b, c):
+    return a + b*np.exp(-c*x)
+
+rapid_income = np.array(rapid_revenue_df["Price Paid"])
+num, edges, _ = plt.hist(rapid_income, linewidth=1.2, edgecolor="black")
+# plt.hist return edges of bars, we want the average values,
+# create a new array with a moving average of width 2
+avg = np.convolve(edges, np.ones((2,))/2, mode="valid")
+plt.title("Orders Recieved by UBC Rapid")
+plt.xlabel("Customer Cost")
+plt.ylabel("# of orders")
+
+guess = [0.3, 64, 0.55]
+coeff, covar = curve_fit(exponential, avg, num, p0=guess)
+plt.plot(avg, exponential(avg, coeff[0], coeff[1], coeff[2]))
+plt.savefig("rapid_cost.svg")
+def price_exponential(x):
+    return exponential(x, coeff[0], coeff[1], coeff[2])
+
+class PricePDF(rv_continuous):
+    def __init__(self, *args, **kwargs):
+        super(PricePDF, self).__init__(*args, **kwargs)
+        
+        self._price_area, _ = scipy.integrate.quad(
+            price_exponential, self.a, self.b)
+
+    def _pdf(self, x):
+        return price_exponential(x) / self._price_area 
+
+
+class LINPDF(rv_continuous):
+    def _pdf(self, x):
+        return x
+
+# Minimum purchase order is $5 CAD, provide finite bound for pdf
+price_pdf = PricePDF(a=5, b=max(rapid_income))
+
+lin_pdf = LINPDF(a=0, b=10)
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[13]:
+[[file:./obipy-resources/pbuykm.svg]]
+:END:
+
+* Cashflow Simulation
+** Get list of months in school
+#+NAME: month_helpers
+#+BEGIN_SRC ipython :session :results raw drawerS
+def get_w_months(year, term):
+    if term == 1:
+        # winter term 1 is Sept to Dec
+        return year, [9, 10, 11, 12]
+    elif term == 2:
+        # winter term 2 is Jan to Apr
+        return year + 1, [1, 2, 3, 4]
+        
+
+def is_in_school(time):
+    school_sessions = [
+                       "2017W1", "2017W2",
+                       "2018W2",
+                       "2019W1",
+                       "2020W1", "2020W2"
+                       ]
+    for sess in school_sessions:
+        year, term = (int(n) for n in sess.split("W"))
+        year, months = get_w_months(year, term)
+        months = [date(year, month, 1) for month in months]
+        if time in months:
+            return True
+    return False
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[244]:
+:END:
+
+** Simulate cashflow
+*** Constants label:constants
+#+NAME: constants
+#+BEGIN_SRC ipython :session :results raw drawer
+tax_rate = 0.12
+cca_rate = 0.5
+
+npv_discount_rate = 0.10
+# Time starts in Sept 2017
+start_time = date(2017, 9, 1)
+
+c = CurrencyConverter()
+asset_purchase_month = start_time - timedelta(days=2)
+asset_purchase_month = asset_purchase_month.replace(day=1)
+asset_purchase_unit_cost = c.convert(400, "USD", "CAD", asset_purchase_month)
+
+# Get month after "2020W2"
+y, ms = get_w_months(2020, 2)
+m = ms[-1] + 1
+asset_disposition_month = date(y, m, 1)
+asset_disposition_unit_cost = 200
+#+END_SRC
+
+#+RESULTS: constants
+:RESULTS:
+# Out[7]:
+:END:
+
+#+RESULTS:
+:RESULTS:
+# Out[391]:
+:END:
+*** Helper functions
+#+NAME: helper_funcs
+#+BEGIN_SRC ipython :session :results raw drawer
+def get_CCAs(purchases, rate, dispositions=None, empty=None):
+    """Calculate CCAs for equipemnt purchases
+
+    Note: Assumes assets are always sold for less than their original cost
+
+    Params:
+    purchases -- list of cost of purchases every year
+    rate -- CCA rate
+    dispositions -- optional, either:
+                    - list of revenue gained from selling an asset
+                    - True, treat purchases as both purchases and dispositions
+                      (i.e. negative values are purchases, positive values are dispositions)
+    empty -- optional, list indicating the year(s) the CCA class
+             becomes empty due to a disposition
+
+    Returns: A tuple of: 
+    - An array of available CCAs every year
+    - An array of UCC avaialable at the end of the year
+
+    """
+    CCAs = []
+    UCCs = []
+    UCC = 0
+    if dispositions is None:
+        dispositions = [0 for _ in purchases]
+    if dispositions is True:
+        purchases = np.array(purchases)
+        dispositions = [d if d > 0 else 0 for d in purchases]
+        purchases = [-p if p < 0 else 0 for p in purchases]
+    if empty is None:
+        empty = [0  for _ in purchases]
+    assert len(dispositions) == len(purchases)
+    assert len(empty) == len(purchases)
+
+    # Ensure that a disposition actually occurs when the
+    # class becomes empty
+    for idx, e in enumerate(empty):
+        if e:
+            assert dispositions[idx]
+
+    purchases.insert(0, 0)
+    dispositions.insert(0, 0)
+    empty.insert(0, 0)
+    for i in range(1, len(purchases)):
+        UCC += purchases[i]/2 + purchases[i-1]/2 - dispositions[i]
+        if empty[i]:
+            # Lump terminal losses with CCAs for simplicity.
+            # 
+            # If UCC is positive, there is a terminal loss of the
+            # remaining balance in the UCC.
+            # For calculations, this is functionally equivalent to
+            # moving all of the remaining UCC into CCA when the class is empty
+            #
+            # If UCC is negative, there is a CCA recapture, which gets added
+            # as extra business income.
+            # For calculations, this is functionally equivalent to
+            # having a negative CCA
+            CCA = UCC
+            UCC = 0
+        else:
+            CCA = rate * UCC
+            UCC -= CCA
+        UCCs.append(UCC)
+        CCAs.append(CCA)
+    CCAs = np.array(CCAs)
+    UCCs = np.array(UCCs)
+    return CCAs, UCCs
+                    
+def get_orders(time):
+    month = time.month
+    avg_orders = num_time[month - 1]
+    stddev = 0.25 * avg_orders
+    orders = np.round(np.random.normal(avg_orders, stddev))
+    return int(orders)
+
+def get_yearly_cashflow(cashflows):
+    """Convert a dict of monthly cashflows into a dict of yearly cashflows"""
+    cashflows = deepcopy(cashflows)
+    months = cashflows.pop("months")
+    years = sorted(list(set([d.year for d in months])))
+
+    yearly_cashflows = {}
+
+    for key, cf in cashflows.items():
+        year_cf = [0 for _ in years]
+        for idx, t in enumerate(cf):
+            year = months[idx].year
+            year_idx = years.index(year)
+            year_cf[year_idx] += t
+        yearly_cashflows[key] = year_cf
+    yearly_cashflows["years"] = [date(y, 1, 1) for y in years]
+    return yearly_cashflows
+
+class FilamentColor(Enum):
+    BLACK = 0
+    GRAY = 1
+    PURPLE = 2
+    RED = 3
+    YELLOW = 4
+    ORANGE = 5
+    
+class FilamentRoll:
+    roll_cost = 20
+    gram_cost = 0.2
+    def __init__(self, color):
+        # Each roll is 1kg
+        self.remaining = 1000
+        self.color = color
+
+    def consume(self, amt):
+        self.remaining -= amt
+        if self.remaining < 0:
+            raise ValueError("Consumed roll")
+#+END_SRC
+
+#+RESULTS: helper_funcs
+:RESULTS:
+# Out[8]:
+:END:
+
+#+RESULTS:
+: # Out[376]:
+
+*** Main simulation code label:simulation
+#+BEGIN_SRC ipython :session :results raw drawer
+def consume_filament(filaments, amt, color):
+    filament = next((f for f in filaments if f.color == color), None)
+    if filament is None:
+        # Get a new filament roll if none is available
+        filament = FilamentRoll(color)
+        # do print with filament roll
+        filament.consume(amt)
+        filaments.append(filament)
+        return FilamentRoll.roll_cost
+    try:
+        # do print with filament roll
+        filament.consume(amt)
+    except ValueError:
+        # Remove empty filament roll
+        filaments.remove(filament)
+        # Get a new filament roll
+        filament = FilamentRoll(color)
+        # Redo print with new roll
+        filament.consume(amt)
+        filaments.append(filament)
+        return FilamentRoll.roll_cost
+    return 0
+
+def get_operating_cashflows():
+    cur_time = start_time
+    months = []
+    filament_costs = []
+    maintenance_costs = []
+    revenues = []
+    filaments = []
+
+    # Check for when year rolls over
+    last_year = cur_time.year
+    while cur_time.year <= 2021:
+        maintenance_cost = 0
+        filament_cost = 0
+        revenue = 0
+
+        # Spend $100 buying spare parts at beginning of year
+        if last_year != cur_time.year:
+            last_year = cur_time.year
+            maintenance_cost += 100
+        if is_in_school(cur_time):
+            num_orders = get_orders(cur_time)
+            for _ in range(num_orders):
+                total_price = float(price_pdf.rvs(size=1))
+                material_price = total_price - 5
+                color = np.random.choice(list(FilamentColor))
+                amt = material_price / FilamentRoll.gram_cost
+                filament_cost += consume_filament(filaments, amt, color)
+                revenue += total_price
+        maintenance_costs.append(maintenance_cost)
+        filament_costs.append(filament_cost)
+        revenues.append(revenue)
+        months.append(cur_time)
+
+        # Ensure one month passes
+        cur_time += timedelta(days=32)
+        # Reset to first of month
+        cur_time = cur_time.replace(day=1)
+
+    maintenance_costs = list(-np.array(maintenance_costs))
+    filament_costs = list(-np.array(filament_costs))
+    return {
+        "months": months,
+        "maintenance": maintenance_costs,
+        "filament": filament_costs,
+        "revenues": revenues
+        }
+
+def gen_npv_irr():
+    cashflows = get_operating_cashflows()
+    # Prepend 0'th month onto cashflows
+    cashflows["months"].insert(0, asset_purchase_month)
+    cashflows["maintenance"].insert(0, 0)
+    cashflows["filament"].insert(0, 0)
+    cashflows["revenues"].insert(0, 0)
+
+    # create an assets cashflow
+    cashflows["assets"] = [0 for _ in range(len(cashflows["revenues"]))]
+    cashflows["assets"][0] = -3 * asset_purchase_unit_cost
+
+    # Append last month to cashflows
+    cashflows["months"].append(asset_disposition_month)
+    cashflows["maintenance"].append(0)
+    cashflows["filament"].append(0)
+    cashflows["revenues"].append(0)
+    cashflows["assets"].append(3 * asset_disposition_unit_cost)
+
+    yearly_cashflows = get_yearly_cashflow(cashflows)
+
+    assets = np.array(yearly_cashflows["assets"])
+    operating_revenue = np.array(yearly_cashflows["revenues"])
+    operating_costs = (np.array(yearly_cashflows["maintenance"]) +
+                    np.array(yearly_cashflows["filament"]))
+    btcf = operating_revenue - operating_costs
+    purchases = list(assets)
+    empty = [0 if p != purchases[-1] else 1 for p in purchases]
+
+    ccas, uccs = get_CCAs(purchases, cca_rate, dispositions=True, empty=empty)
+    taxable_income = btcf - ccas
+    tax = tax_rate * taxable_income
+    atcf = btcf - tax
+
+    total_cashflow = assets + atcf
+    npv = np.npv(npv_discount_rate, total_cashflow)
+
+    extended_atcf = np.insert(atcf, 0, 0)
+    extended_assets = np.insert(assets, 1, 0)
+    extended_cashflow = extended_atcf + extended_assets
+
+    irr = np.irr(extended_cashflow)
+
+    return npv, irr
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[15]:
+:END:
+
+
+bibliographystyle:plain
+bibliography:report.bib
