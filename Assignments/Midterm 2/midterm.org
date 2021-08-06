@@ -1,0 +1,339 @@
+#+TITLE: MECH 431 Midterm 2 Submission
+#+AUTHOR: Jasper Chan - 37467164
+#+OPTIONS: toc:nil
+#+LATEX_HEADER: \usepackage{mathtools}
+#+LATEX_HEADER: \usepackage{xcolor}
+#+LATEX_HEADER: \usepackage{textcomp}
+#+LATEX_HEADER: \usepackage{xfrac}
+
+#+BEGIN_SRC ipython :session :exports none
+%config InlineBackend.figure_format = 'svg'
+from matplotlib import pyplot as plt
+import matplotlib
+import numpy as np
+
+#+END_SRC
+
+#+RESULTS:
+: # Out[1]:
+
+1. *[1 mark]* You are considering three projects:
+   A (the cheapest), B (the middle), and C (most expensive).
+   Alternative A has an IRR of 14%. Alternative B has a base IRR of 21% and an incremental IRR (B to A) of 13%.
+   Alternative C has an IRR of 20%, an incremental IRR (C to B) of 16% and an incremental IRR (C to A) of 19%.
+   If your MARR is 18%, which (if any) alternative should you pick?
+
+   Alternative A has an IRR < MARR, so it is not viable as a base case.
+   Alternative B has an IRR > MARR, so we will use it as our base case.
+   The incremental IRR from B to C is below our MARR, so it is not worth spending the extra money to pursue it.
+
+   Therefore, alternative B is the best option.
+
+2. *[2 marks]* You are analyzing a process improvement that will reduce the cost of production for a particular step in your chemical process.
+   While this improvement will reduce costs, it will not generate additional revenue.
+   Why do we still need to consider the effects of income tax on this project despite there being no new revenue?
+
+   Assuming the sales stay the same, reducing operating costs means that a higher portion of your operating revenue goes into your before tax cash flow.
+   The CCA may also change if equipment needs to be purchased or sold.
+
+   \pagebreak
+3. *[2 marks]* An asset is purchased for $420,000,.
+   It is in a CCA Class that has a depreciation rate of 14% per year.
+   What is the amount depreciated in the second year of owning the asset?
+   What is the book value of the asset at the end of the second year?
+   (the \sfrac{1}{2} year rule is in effect for this question).
+   #+BEGIN_SRC ipython :session :results output :exports results purchases = [420000.00, 0.00] # Only looking at 2 years of owning the asset
+   cca_rate = 0.14
+
+   def get_CCAs(purchases, rate, dispositions=None):
+       CCAs = []
+       UCCs = []
+       UCC = 0
+       if dispositions is None:
+           dispositions = [0 for _ in purchases]
+       assert len(dispositions) == len(purchases)
+       purchases.insert(0,0)
+       dispositions.insert(0,0)
+       for i in range(1, len(purchases)):
+           UCC += purchases[i]/2 + purchases[i-1]/2 - dispositions[i]
+           # TODO: this is probably broken
+           CCA = cca_rate * UCC
+           UCC -= CCA
+           UCCs.append(UCC)
+           CCAs.append(CCA)
+       CCAs = np.array(CCAs)
+       return CCAs, UCCs
+
+   CCAs, UCCs = get_CCAs(purchases, cca_rate)
+
+   out = f"""The asset is depreciated by ${CCAs[-1]:.2f} and
+   has a book cost of ${UCCs[-1]:.2f} in the second year"""
+   print(out)
+   #+END_SRC
+
+   #+RESULTS:
+   : The asset is depreciated by $54684.00 and
+   : has a book cost of $335916.00 in the second year
+
+   \pagebreak
+4. [2 marks] The chart below indicates a number of investment opportunities, plotting out their IRR vs. risk.
+   Which opportunities should be complitely ignored (i.e. they are dominated)?
+   Is option "F" dominated?
+   Why or why not?
+   [[file:media/image1.png]]
+
+   - B is dominated by A
+   - D is dominated by C
+   - H is dominated by F
+   - G is dominated by E
+
+   Option F is not dominated because there is no other option with both a higher IRR and a lower risk.
+     
+5. *[2 marks]* You earn $57,000 per year.
+   You pay a combined federal and provincial tax rate of 20.05% on the first $39,500 of income, and a combined tax rate of 28% on the next $39,500.
+   What is your average tax rate?
+   What is your marginal tax rate?
+   #+BEGIN_SRC ipython :session :results output :exports results
+   annual_income = 57000
+   tax_rate_low = 0.2005
+   tax_rate_high = 0.28
+   tax_cutoff = 39500
+
+   tax_low = tax_cutoff * tax_rate_low
+   tax_high = (annual_income - tax_cutoff) * tax_rate_high
+   tax_total = tax_low + tax_high
+   tax_rate_avg = tax_total / annual_income
+
+   tax_rate_avg
+
+   out = f"""The average tax rate is {tax_rate_avg*100:.2f}%,
+   The marginal tax rate is {tax_rate_high*100:.2f}%"""
+   print(out)
+   #+END_SRC
+
+   #+RESULTS:
+   : The average tax rate is 22.49%,
+   : The marginal tax rate is 28.00%
+
+6. *[2 marks]* Why is working capital not depreciated during a project?
+   Describe a situation where this would overstate the value of the working capital at the end of the project.
+
+   Working capital is money injected into the start of a project to cover the costs of delivery before the benefits can be reaped.
+   Money that is used to buy materials or parts that are currently in inventory may be used as inputs to the project.
+   Inputs to a project are part of operating costs, which are not depreciated the way that capital assets are.
+
+   Working capital does not depreciate, the nominal value of the money or parts do not change over time if they go into making the same product.
+   Because of this, depreciating the value of working capital would lead to overstating the value since the book value would be less than the actual value of the working capital, meaning that a tax shield would have been generated out of nowhere.
+
+7. *[2 marks]* What does it mean if an investment has a negative Internal Rate of Return?
+   In what case would a project with a negative IRR be feasible?
+
+   A negative rate Internal Rate of Return indicates that the non-discounted costs of a project are greater than its non-discounted benefits.
+
+   Projects with negative IRRs may be considered feasible if they are deemed necessary to access other projects in the future. (i.e. building infrastructure to support future products)
+
+8. *[2 marks]* You decide to analyze a project using cases and joing probabilities.
+   One variable you choose cases for is sales volume, with a high, nominal and low case.
+   The second variable you use is product quality, reflecting warranty costs.
+   You have two cases here, low warranty costs and high.\\
+   To use joint probability, what assumption have you made about the relationship between these variables?
+   Why might this be a poor assumption here?
+
+   To use joint probability, you have to assume that the two variables are unrelated.
+   This may be a poor assumption because the product quality may have an effect on sales volume
+   (higher quality may increase demand or lower supply, higher sales price may lower demand, etc).
+
+9. *[4 marks]* Discuss: What do depreciation expenses represent?
+   How do depreciation expenses affect the economic analysis of a potential investment in equipment?
+   How can a project with a negative Taxable Income still have a positive After Tax Cashflow?
+   Why is land not depreciable?
+
+   Depreciation expenses represent the loss in value of an asset over time.
+   Because the asset is worth less than what it was purchased for, it can be considered as a cost.
+
+   Depreciation expenses can improve the present value of an investment by delaying part of the cost into the future, where those costs are worth less.
+
+   If the sum of all the CCA Classes and debt interest is greater than the before tax cashflow, then the taxable income will be negative, but the after tax cashflow will be positive.
+
+   Land is not depreciable because it does not wear out or lose value over time.
+   The value that can be derived (i.e. space to put buildings and other assets) does not change with time.
+
+   \pagebreak
+10. *[6 marks]* You are implementing a process improvement that will improve product yield and cut waste.
+    Because of this, the savings are dependent on sales volumes, which are highly variable.
+    After getting sales volume estimates from the sales team, you estimate the IRR for the following three cases for your project:
+
+    +------------------------------+
+    |Yield Improvement Project     |
+    +-------------+----+-----------+
+    |Sales Volume |IRR |Likelihood |
+    +-------------+----+-----------+
+    |Low          |-5% |20%        |
+    +-------------+----+-----------+
+    |Expected     |14% |55%        |
+    +-------------+----+-----------+
+    |High         |20% |25%        |
+    +-------------+----+-----------+
+
+    Based on this, estimate the expected IRR for the project *[3 marks]*
+
+    #+BEGIN_SRC ipython :session :results raw drawer :exports both
+iirs = [-0.05, 0.14, 0.2]
+probs = [0.2, 0.55, 0.25]
+
+iir_avg = np.average(iirs, weights=probs)
+f"The expected IRR is {iir_avg*100:.2f}%"
+    #+END_SRC
+
+    #+RESULTS:
+    :RESULTS:
+    # Out[204]:
+    : 'The expected IRR is 11.70%'
+    :END:
+
+    Estimate the standard deviation for the project *[3 marks]*
+
+    #+BEGIN_SRC ipython :session :results raw drawer :exports both
+var = sum([iir**2 * prob for iir, prob in zip(iirs, probs)]) - iir_avg**2
+std_dev = np.sqrt(var)
+f"The standard deviation of the IIR is {std_dev*100:.2f}%"
+    #+END_SRC
+
+    #+RESULTS:
+    :RESULTS:
+    # Out[205]:
+    : 'The standard deviation of the IIR is 8.71%'
+    :END:
+
+    Based on these estimates, using the rule of thumb for risk would you recommend this project? *[1  mark]*
+
+    #+BEGIN_SRC ipython :session :results output :exports both
+if iir_avg >= 2*std_dev:
+    print(("The expected IIR is greater than double the standard deviation.\n"
+           "The project is relatively safe."))
+else:
+    print(("The expected IIR is less than double the standard deviation.\n"
+           "The project is not safe."))
+    #+END_SRC
+
+    #+RESULTS:
+    : The expected IIR is less than double the standard deviation.
+    : The project is not safe.
+
+11. *[4 marks]* You purchase some shares in a Major Canadian Bank as part of your personal savings plan.
+    You purchase 100 shares at $42 per share.
+    The shares pay an annual dividend.\\
+    Year 1: $2.00 per share\\
+    Year 2: $2.20 per share\\
+    Year 3: $2.20 per share\\
+    Year 4: $2.30 per share\\
+    Year 5: $2.60 per share\\
+    After five years, you sell the shares at $55 per share.
+    Calculate the rate of return you recieved on this investment.
+
+    If you use the guess and iterate method, only do calculations for your first guess, and indicate what your second guess would be.
+    If you use a spreadsheet to calculate the IRR, also demonstrate your answer is correct by showing the NPV of the investment at your calculated IRR.
+    Show the table of values and the functions you used so the marker can replicate the results.
+
+    #+BEGIN_SRC ipython :session :results output :exports both
+cashflow = np.array([-42.0, 2.0, 2.2, 2.2, 2.3, 2.6, 55])
+irr = np.irr(cashflow)
+npv = np.npv(irr, cashflow)
+
+out = f"""The IRR for this investment is {irr*100:.2f}%.
+The calculated NPV at the IRR is ${npv:.2f}."""
+print(out)
+    #+END_SRC
+
+    #+RESULTS:
+    : The IRR for this investment is 8.76%.
+    : The calculated NPV at the IRR is $0.00.
+
+12. *[10 marks]* You work at a toxic waste factory, on the sludge process line.
+    As part of your factory's efforts to be more environmentally responsible, you are assessing replacing a major pump's electric motor with a higher efficience model.
+
+    The new motor would cost $330,000.
+    It is in CCA Class 43, with a CCA rate of 30%.
+    Your company has an income tax rate of 28%.
+    It is expected to save $45,000 per year in electricity costs
+
+    *[a]* Determine the After Tax Cashflows for the first and second year of purchasing and operating the new motor.
+    (\sfrac{1}{2} year rule is in effect) *[7 marks]*
+
+    #+BEGIN_SRC ipython :session :results raw drawer :exports both
+cca_rate = 0.3
+tax_rate = 0.28
+dep_purchases = [330000, 0]
+profits = [45000, 45000]
+
+CCAs, UCCs = get_CCAs(dep_purchases, tax_rate)
+
+f"The CCA allowance for the first two years is {[f'${c:.2f}' for c in CCAs]}"
+    #+END_SRC
+
+    #+RESULTS:
+    :RESULTS:
+    # Out[41]:
+    : "The CCA allowance for the first two years is ['$49500.00', '$84150.00']"
+    :END:
+    As we can see, the the max CCA allowance for both years exceeds the profit generated by this project.
+    If this profit were the only revenue for the project, it would not make sense to actually claim this amount, since it would essentially lead to negative taxable income.
+    However, because the benefits are coming from a process improvement in a project that is presumably already making an at least comparable amount of revenue, I will assume that the total Before Tax Cashflow is enough to claim the full CCA amount.
+
+    #+BEGIN_SRC ipython :session :results raw drawer :exports both
+tax_shield = tax_rate * CCAs
+f"The tax shield for the first two years is {[f'${s:.2f}' for s in tax_shield]}"
+    #+END_SRC
+
+    #+RESULTS:
+    :RESULTS:
+    # Out[99]:
+    : "The tax shield for the first two years is ['$13860.00', '$23562.00']"
+    :END:
+   
+    #+BEGIN_SRC ipython :session :results output :exports both
+BTCF = np.array(profits)
+taxable_income = BTCF - CCAs
+tax = tax_rate * taxable_income
+ATCF = BTCF - tax
+
+out = f"""The additional After Tax Cashflows for
+the first two years is {[f'${a:.2f}' for a in ATCF]}"""
+print(out)
+    #+END_SRC
+
+    #+RESULTS:
+    : The additional After Tax Cashflows for
+    : the first two years is ['$46260.00', '$55962.00']
+
+    *[b]* The old motor was purchased 10 years ago, for $140,000.
+    If you sold it for $22,000 at the same time you installed the new pump, how much income tax would you owe or be credited due to the disposition?
+    (\sfrac{1}{2} year rule is in effect) *[3 marks]*
+
+    #+BEGIN_SRC ipython :session :results output :exports both
+dep_purchases2 = [140000,
+                 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                 330000, 0]
+dispositions2 = [0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0,
+                22000, 0]
+profits2 = [0,
+           0, 0, 0, 0, 0, 0, 0, 0, 0,
+           45000, 45000]
+
+CCAs2, UCCs2 = get_CCAs(dep_purchases2, cca_rate, dispositions2)
+
+# Analysis period covers past 10 years and next two years,
+# we're only interested in the next two years
+curr_CCAs = CCAs2[-2:]
+delta_CCAs = CCAs - curr_CCAs
+tax_owed = tax_rate * delta_CCAs
+
+out = f"""The additional income tax from selling the old pump
+for the first two years is {[f'${t:.2f}' for t in tax_owed]}"""
+print(out)
+    #+END_SRC
+
+    #+RESULTS:
+    : The additional income tax from selling the old pump
+    : for the first two years is ['$1444.63', '$1011.24']
