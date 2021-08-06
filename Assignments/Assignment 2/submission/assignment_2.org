@@ -1,0 +1,151 @@
+#+TITLE: MECH 431 2019S - Assignment 1
+#+SUBTITLE: Easy Bake Oven
+#+AUTHOR: Jasper Chan - 37467164
+#+OPTIONS: toc:nil
+
+* 
+Which lender the oven supplier or the business associates, offers the better terms?
+What are the payments for each options?
+** Oven supplier
+#+BEGIN_SRC ipython :session :results raw drawer :exports both
+P = 2.3*10**6
+i_n = 0.12
+i = 0.12/12
+n = 12*10
+A_o = P/(((1+i)**n - 1)/(i*(1+i)**n))
+
+f"{A_o:.2f}"
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[11]:
+: '32998.32'
+:END:
+** "Business associates"
+#+BEGIN_SRC ipython :session :results raw drawer :exports both
+i_n = 0.115
+i_da = 0.12/365
+i = (1 + i_da)**(365/12) - 1
+A_b = P/(((1+i)**n - 1)/(i*(1+i)**n))
+
+f"{A_b:.2f}"
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[12]:
+: '33075.76'
+:END:
+** Conclusion
+Based on the above calculations we can see that the oven supplier is offering better terms
+
+* 
+The organization you work for has an internal interest rate for assesing these kind of projects of 30% (compounded monthly).
+Use present worth analysis to asses if purchasing the oven is a worthwhile investment or not, assuming you purchase the oven with your own funds.
+Include a cashflow diagram
+** Oven
+Calculations based on 10 year lifespan of oven
+#+BEGIN_SRC ipython :session :results raw drawer
+i = 0.3/12
+i_d = (1+i)**(12/365) - 1
+i_6m = (1+i)**(12/2) - 1
+i_5y = (1+i)**(60/1) - 1
+
+# Benefit
+b_d = 2500
+b = sum([ b_d*(1/(1+i_d))**d for d in range(1,3651)])
+
+oven_payment_m = A_o
+oven_payment = sum([ oven_payment_m*(1/(1+i))**m for m in range(1,121)])
+
+oven_installation = 200000
+
+gas_d = 800
+gas = sum([ gas_d*(1/(1+i_d))**d for d in range(1,3651)])
+
+maintenance_6m = 5000
+# Assume there's no maintenance fee for an overhaul
+maintenance = sum(
+    [(maintenance_6m*1.05**(t-1)) * (1/(1+i_6m))**t
+     for t in range(1,21) if t != 10])
+
+overhaul = 140000 * (1/(1+i_5y))
+
+npv = b - oven_payment - oven_installation - gas - maintenance - overhaul
+npv
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[58]:
+: 463960.8132346804
+:END:
+
+Given that the NPV for this project is positive, investing in it should be worthwhile
+
+** Cashflow diagram
+#+BEGIN_SRC  ipython :session :results none :exports none
+%matplotlib inline
+%config InlineBackend.figure_format = 'svg'
+from matplotlib import pyplot as plt
+import matplotlib
+import numpy as np
+
+#+END_SRC
+
+#+BEGIN_SRC ipython :session :results raw drawer :exports results
+
+months = range(121)
+
+b_list = [b_d*30 for _ in months]
+b_list[0] = 0
+b_list = np.asarray(b_list)
+
+oven_installation_list = [0 for _ in months]
+oven_installation_list[0] = - oven_installation
+oven_installation_list = np.asarray(oven_installation_list)
+
+gas_list = [-gas_d*30 for _ in months]
+gas_list[0] = 0
+gas_list = np.asarray(gas_list)
+
+oven_payment_list = [-oven_payment_m for _ in months]
+oven_payment_list[0] = 0
+oven_payment_list = np.asarray(oven_payment_list)
+
+maintenance_list = [0 for _ in months]
+for i in range(1,21):
+    if i != 10:
+        maintenance_list[i*6] = -5000*1.05**(i-1)
+maintenance_list = np.asarray(maintenance_list)
+
+overhaul_list = [0 for _ in months]
+overhaul_list[60] = -140000
+overhaul_list = np.asarray(overhaul_list)
+
+width = 0.35
+plt.figure(figsize=(14, 6))
+plt.bar(months, b_list, width, label="Total benefit (Extra cashflow)")
+plt.bar(months, oven_installation_list, width, label="Oven Installation")
+plt.bar(months, oven_payment_list, width, label="Oven Monthly Payments")
+plt.bar(months, gas_list, width, bottom=oven_payment_list, label="Gas")
+plt.bar(months, maintenance_list, width, bottom=oven_payment_list + gas_list, label="Maintenance")
+plt.bar(months, overhaul_list, width, bottom=oven_payment_list + gas_list + maintenance_list, label="Overhaul")
+
+plt.axhline(linewidth='1', color='k')
+
+plt.xlabel("Time (months)")
+plt.ylabel("Money ($)")
+plt.legend(loc='upper center', bbox_to_anchor=(0.5,-0.05), ncol=5)
+                 
+None
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[62]:
+[[file:./obipy-resources/xu9iEk.svg]]
+:END:
+
